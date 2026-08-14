@@ -28,7 +28,7 @@ export function ProductTables() {
             {result.topProducts.map((product) => (
               <div key={product.name} className="flex items-center justify-between rounded-xl bg-white/3 px-3 py-2.5">
                 <div>
-                  <p className="text-sm font-medium text-white">{product.name}</p>
+                  <p className="text-sm font-medium text-foreground">{product.name}</p>
                   <p className="text-xs text-muted">{formatMoney(product.revenue, currency)}</p>
                 </div>
                 <Badge
@@ -54,7 +54,7 @@ export function ProductTables() {
               {result.stagnantInventory.map((item) => (
                 <div key={item.name} className="flex items-center justify-between gap-3 rounded-xl bg-white/3 px-3 py-2.5">
                   <div>
-                    <p className="text-sm font-medium text-white">{item.name}</p>
+                    <p className="text-sm font-medium text-foreground">{item.name}</p>
                     <p className="text-xs text-muted">{item.daysStagnant} يوماً بدون حركة</p>
                   </div>
                   <Button

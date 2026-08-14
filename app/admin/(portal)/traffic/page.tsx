@@ -6,32 +6,34 @@ import { AdminHeader } from "@/components/admin/admin-header";
 import { AdminKpi } from "@/components/admin/admin-kpi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAdminPortal } from "@/context/admin-portal";
+import { useAppearance } from "@/context/appearance";
 import { formatCount } from "@/lib/admin/money";
 
 export default function AdminTrafficPage() {
   const { snapshot, ready } = useAdminPortal();
+  const { t } = useAppearance();
 
   if (!ready || !snapshot) {
-    return <p className="p-6 text-sm text-muted">جاري تحميل حركة المرور...</p>;
+    return <p className="p-6 text-sm text-muted">{t("admin.traffic.title")}...</p>;
   }
 
   const maxCountry = Math.max(...snapshot.countries.map((row) => row.visitors), 1);
 
   return (
     <>
-      <AdminHeader title="حركة المرور والاستخدام" subtitle="كم عدد الزوار، وكيف يستخدمون ميزات Smart Profits" />
+      <AdminHeader title={t("admin.traffic.title")} subtitle={t("admin.traffic.subtitle")} />
       <div className="space-y-5 p-6">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <AdminKpi title="الزوار الفريدون" value={formatCount(snapshot.uniqueVisitors)} hint="Unique Visitors" icon={Eye} />
-          <AdminKpi title="المشاهدات" value={formatCount(snapshot.pageViews)} hint="Page Views" icon={Globe} />
-          <AdminKpi title="معدل التحويل" value={`${snapshot.conversion}%`} hint="زائر → مستخدم مسجّل" icon={MousePointerClick} />
+          <AdminKpi title="الزوار الفريدون" value={formatCount(snapshot.uniqueVisitors)} hint="حسابات ظهرت في أحداث الفترة" icon={Eye} />
+          <AdminKpi title="المشاهدات" value={formatCount(snapshot.pageViews)} hint="عدد الأحداث الحقيقية" icon={Globe} />
+          <AdminKpi title="معدل التحويل" value={`${snapshot.conversion}%`} hint="تسجيل جديد ÷ النشاط الفريد" icon={MousePointerClick} />
           <AdminKpi title="أخطاء رفع Excel" value={formatCount(snapshot.uploadErrors)} hint="ملفات فشل تنظيفها" icon={AlertTriangle} />
         </div>
 
         <div className="grid gap-4 xl:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle>مصادر الحركة</CardTitle>
+              <CardTitle>مصادر النشاط داخل المنصة</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="mx-auto h-[220px] w-[220px]" dir="ltr">
@@ -62,9 +64,12 @@ export default function AdminTrafficPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>الدول الأكثر زيارة</CardTitle>
+              <CardTitle>المتاجر حسب الملفات المحفوظة</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
+              {snapshot.countries.length === 0 && (
+                <p className="text-sm text-muted">لا يوجد تجار بملفات محفوظة بعد.</p>
+              )}
               {snapshot.countries.map((row) => (
                 <div key={row.name}>
                   <div className="mb-1 flex items-center justify-between text-sm">
@@ -94,7 +99,7 @@ export default function AdminTrafficPage() {
                 <XAxis dataKey="name" tick={{ fill: "#94a3b8", fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} axisLine={false} tickLine={false} />
                 <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 12 }} />
-                <Bar dataKey="uses" name="مرات الاستخدام" fill="#10b981" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="uses" name="مرات الاستخدام" fill="#4fd1c5" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>

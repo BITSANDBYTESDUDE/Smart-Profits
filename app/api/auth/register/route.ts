@@ -18,7 +18,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "أكمل البيانات بشكل صحيح." }, { status: 400 });
     }
 
-    await upsertAccount({ fullName, storeName, email, password });
+    await upsertAccount({
+      fullName,
+      storeName,
+      email,
+      password,
+      createdAt: new Date().toISOString(),
+      lastActive: new Date().toISOString(),
+      plan: "free",
+      status: "active",
+    });
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: "تعذر حفظ الحساب." }, { status: 500 });

@@ -30,7 +30,7 @@ export function HealthPanel() {
           <HealthRing score={health.score} label={health.label} />
           <div className="min-w-0 flex-1">
             <p className="text-sm text-muted">Store Health</p>
-            <p className="text-3xl font-bold text-white">{health.score}/100</p>
+            <p className="text-3xl font-bold text-foreground">{health.score}/100</p>
             <p className="mt-2 text-sm leading-7 text-slate-200">{health.headline}</p>
           </div>
         </div>

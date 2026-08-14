@@ -18,6 +18,8 @@ export interface PersistedWorkspace {
   activeFileId: string;
   files: PersistedFile[];
   actionLog: ActionLogEntry[];
+  ownerEmail?: string;
+  savedAt?: string;
 }
 
 export interface PersistedAnalysis {

@@ -43,7 +43,7 @@ export function SalesBarChart() {
               contentStyle={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 12 }}
               formatter={(value) => formatMoney(currency === "USD" ? Number(value) * 3.75 : Number(value), currency)}
             />
-            <Bar dataKey="sales" fill="#10b981" radius={[6, 6, 0, 0]} />
+            <Bar dataKey="sales" fill="#4fd1c5" radius={[6, 6, 0, 0]} />
             <Bar dataKey="expenses" fill="#475569" radius={[6, 6, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>

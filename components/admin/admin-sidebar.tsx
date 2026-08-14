@@ -4,19 +4,20 @@ import { Globe, LayoutDashboard, LogOut, Users, Wallet } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Logo } from "@/components/brand/logo";
+import { AppearanceToggles } from "@/components/layout/appearance-toggles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAdminAuth } from "@/context/admin-auth";
 import { useAdminPortal } from "@/context/admin-portal";
+import { useAppearance } from "@/context/appearance";
 import type { DateRangeKey } from "@/lib/admin/config";
-import { RANGE_LABELS } from "@/lib/admin/config";
 import { cn } from "@/lib/utils";
 
 const NAV = [
-  { href: "/admin", label: "اللوحة العامة", icon: LayoutDashboard },
-  { href: "/admin/financials", label: "المالية والخزينة", icon: Wallet },
-  { href: "/admin/users", label: "المستخدمون والاستمرارية", icon: Users },
-  { href: "/admin/traffic", label: "المرور والاستخدام", icon: Globe },
+  { href: "/admin", key: "admin.nav.overview" as const, icon: LayoutDashboard },
+  { href: "/admin/financials", key: "admin.nav.financials" as const, icon: Wallet },
+  { href: "/admin/users", key: "admin.nav.users" as const, icon: Users },
+  { href: "/admin/traffic", key: "admin.nav.traffic" as const, icon: Globe },
 ];
 
 const RANGES: DateRangeKey[] = ["today", "week", "month", "year", "custom"];
@@ -26,11 +27,15 @@ export function AdminSidebar() {
   const router = useRouter();
   const { logout, admin } = useAdminAuth();
   const { range, from, to, setRange, setCustomRange } = useAdminPortal();
+  const { t } = useAppearance();
 
   return (
-    <aside className="sticky top-0 flex h-screen w-[270px] shrink-0 flex-col overflow-y-auto border-s border-border bg-[#0b1220] px-4 py-5">
-      <Logo tagline="Super Admin Portal" />
-      <p className="mt-3 text-[11px] leading-5 text-slate-500">محيط المراقبة الشامل لمنصة Smart Profits</p>
+    <aside className="sticky top-0 flex h-screen w-[300px] shrink-0 flex-col overflow-y-auto border-e border-border bg-card px-4 py-5">
+      <Logo size="md" tagline={t("admin.tagline")} />
+      <p className="mt-3 text-[11px] leading-5 text-muted">{t("admin.watch")}</p>
+      <div className="mt-4">
+        <AppearanceToggles />
+      </div>
 
       <nav className="mt-6 flex flex-col gap-1">
         {NAV.map((item) => {
@@ -43,19 +48,19 @@ export function AdminSidebar() {
               className={cn(
                 "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition",
                 active
-                  ? "bg-primary/15 text-white shadow-[inset_-3px_0_0_#3b82f6]"
-                  : "text-slate-400 hover:bg-white/5 hover:text-white",
+                  ? "bg-primary/15 text-foreground shadow-[inset_3px_0_0_var(--primary)] rtl:shadow-[inset_-3px_0_0_var(--primary)]"
+                  : "text-muted hover:bg-black/5 hover:text-foreground dark:hover:bg-white/5",
               )}
             >
               <Icon className="h-4 w-4" />
-              {item.label}
+              {t(item.key)}
             </Link>
           );
         })}
       </nav>
 
-      <div className="mt-8 rounded-2xl border border-border bg-white/3 p-3">
-        <p className="mb-2 text-xs font-medium text-slate-300">فترة البيانات</p>
+      <div className="mt-8 rounded-2xl border border-border bg-black/[0.03] p-3 dark:bg-white/3">
+        <p className="mb-2 text-xs font-medium text-foreground">{t("admin.range")}</p>
         <div className="grid grid-cols-2 gap-1.5">
           {RANGES.map((key) => (
             <button
@@ -64,10 +69,10 @@ export function AdminSidebar() {
               onClick={() => setRange(key)}
               className={cn(
                 "rounded-lg px-2 py-1.5 text-[11px] transition",
-                range === key ? "bg-accent text-white" : "bg-white/5 text-slate-400 hover:text-white",
+                range === key ? "bg-accent text-slate-950" : "bg-black/5 text-muted hover:text-foreground dark:bg-white/5",
               )}
             >
-              {RANGE_LABELS[key]}
+              {t(`admin.${key}`)}
             </button>
           ))}
         </div>
@@ -80,17 +85,17 @@ export function AdminSidebar() {
       </div>
 
       <div className="mt-auto pt-6">
-        <p className="mb-2 truncate px-1 text-xs text-slate-500">{admin?.name}</p>
+        <p className="mb-2 truncate px-1 text-xs text-muted">{admin?.name}</p>
         <Button
           variant="ghost"
-          className="w-full justify-start text-slate-400"
+          className="w-full justify-start text-muted"
           onClick={() => {
             logout();
             router.push("/admin/login");
           }}
         >
           <LogOut className="h-4 w-4" />
-          خروج
+          {t("admin.logout")}
         </Button>
       </div>
     </aside>

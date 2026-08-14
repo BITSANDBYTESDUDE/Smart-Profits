@@ -20,7 +20,7 @@ function Highlight({
   return (
     <Card className="p-4">
       <p className="text-xs text-muted">{title}</p>
-      <p className="mt-2 text-base font-semibold text-white">{product?.name ?? "لا يوجد"}</p>
+      <p className="mt-2 text-base font-semibold text-foreground">{product?.name ?? "لا يوجد"}</p>
       {detail ? <p className="mt-1 text-sm text-slate-300">{detail}</p> : null}
       {product ? <Badge className="mt-2" tone={tone}>{product.isLoss ? "خسارة" : "ربح"}</Badge> : null}
     </Card>
@@ -90,7 +90,7 @@ export function ProductSalesTable() {
               <tbody>
                 {catalog.map((item) => (
                   <tr key={item.name} className="border-b border-border/60 text-slate-200">
-                    <td className="px-2 py-2 font-medium text-white">{item.name}</td>
+                    <td className="px-2 py-2 font-medium text-foreground">{item.name}</td>
                     <td className="px-2 py-2">{item.saleCount} مرة</td>
                     <td className="px-2 py-2">{item.quantity} قطعة</td>
                     <td className="px-2 py-2">{formatMoney(item.revenue, currency)}</td>

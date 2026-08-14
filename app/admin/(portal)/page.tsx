@@ -14,6 +14,7 @@ import { AdminHeader } from "@/components/admin/admin-header";
 import { AdminKpi } from "@/components/admin/admin-kpi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAdminPortal } from "@/context/admin-portal";
+import { useAppearance } from "@/context/appearance";
 import { formatCount, formatUsd } from "@/lib/admin/money";
 
 const ACTIVITY_ICON = {
@@ -30,39 +31,40 @@ const ACTIVITY_DOT = {
 
 export default function AdminOverviewPage() {
   const { snapshot, ready } = useAdminPortal();
+  const { t } = useAppearance();
 
   if (!ready || !snapshot) {
-    return <p className="p-6 text-sm text-muted">جاري تحميل اللوحة العامة...</p>;
+    return <p className="p-6 text-sm text-muted">{t("admin.overview.loading")}</p>;
   }
 
   return (
     <>
-      <AdminHeader title="اللوحة العامة" subtitle="نظرة من أعلى الجبل لصحة منصة Smart Profits" />
+      <AdminHeader title={t("admin.overview.title")} subtitle={t("admin.overview.subtitle")} />
       <div className="space-y-5 p-6">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <AdminKpi
-            title="إجمالي الزوار"
+            title="النشاط الفريد"
             value={formatCount(snapshot.visitors)}
-            hint="مقارنة بالفترة السابقة"
+            hint="حسابات دخلت أو حلّلت في الفترة"
             change={snapshot.visitorsChange}
             icon={Eye}
           />
           <AdminKpi
             title="المستخدمون النشطون"
             value={formatCount(snapshot.activeUsers)}
-            hint="MAU — من استخدم المنصة"
+            hint={`${snapshot.users.length} مسجّل إجمالاً`}
             icon={Users}
           />
           <AdminKpi
-            title="إجمالي الإيرادات / MRR"
+            title="إيراد الاشتراكات / MRR"
             value={formatUsd(snapshot.mrr)}
-            hint="دخل شهري متكرر"
+            hint="المجانية = $0 حتى تُحوَّل لـ Pro"
             icon={CreditCard}
           />
           <AdminKpi
             title="صافي ربح المنصة"
             value={formatUsd(snapshot.netProfit)}
-            hint="الدخل − المصاريف التشغيلية"
+            hint="الاشتراكات − تكاليف مسجّلة (حالياً 0)"
             icon={TrendingUp}
           />
         </div>
@@ -87,7 +89,7 @@ export default function AdminOverviewPage() {
                   <XAxis dataKey="name" tick={{ fill: "#94a3b8", fontSize: 11 }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 12 }} />
-                  <Line type="monotone" dataKey="revenue" name="الدخل" stroke="#10b981" strokeWidth={3} dot={false} />
+                  <Line type="monotone" dataKey="revenue" name="الدخل" stroke="#4fd1c5" strokeWidth={3} dot={false} />
                   <Line type="monotone" dataKey="expenses" name="المصاريف" stroke="#94a3b8" strokeWidth={2} strokeDasharray="6 6" dot={false} />
                 </LineChart>
               </ResponsiveContainer>
@@ -105,7 +107,7 @@ export default function AdminOverviewPage() {
                   <XAxis dataKey="name" tick={{ fill: "#94a3b8", fontSize: 11 }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 12 }} />
-                  <Line type="monotone" dataKey="users" name="مسجّلون جدد" stroke="#3b82f6" strokeWidth={3} dot={false} />
+                  <Line type="monotone" dataKey="users" name="مسجّلون جدد" stroke="#e8c56b" strokeWidth={3} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </CardContent>
@@ -117,6 +119,9 @@ export default function AdminOverviewPage() {
             <CardTitle>جدول النشاط الفوري</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
+            {snapshot.activity.length === 0 && (
+              <p className="text-sm text-muted">لا يوجد نشاط حقيقي في هذه الفترة بعد.</p>
+            )}
             {snapshot.activity.map((item) => {
               const Icon = ACTIVITY_ICON[item.icon];
               return (

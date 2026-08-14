@@ -45,13 +45,13 @@ export function MonthCompare() {
         <div className="grid gap-3 md:grid-cols-2">
           <div className="rounded-xl border border-accent/30 bg-accent/8 p-4">
             <p className="text-xs text-muted">الأكثر ربحية</p>
-            <p className="mt-1 text-lg font-semibold text-white">{best.label}</p>
+            <p className="mt-1 text-lg font-semibold text-foreground">{best.label}</p>
             <p className="mt-1 text-sm text-accent">{formatMoney(best.netProfit, currency)}</p>
             <p className="mt-2 text-sm leading-6 text-slate-300">{reason(bestIdx)}</p>
           </div>
           <div className="rounded-xl border border-red-500/20 bg-red-500/8 p-4">
             <p className="text-xs text-muted">الأقل ربحية</p>
-            <p className="mt-1 text-lg font-semibold text-white">{worst.label}</p>
+            <p className="mt-1 text-lg font-semibold text-foreground">{worst.label}</p>
             <p className="mt-1 text-sm text-red-300">{formatMoney(worst.netProfit, currency)}</p>
             <p className="mt-2 text-sm leading-6 text-slate-300">{reason(worstIdx)}</p>
           </div>
@@ -73,10 +73,10 @@ export function MonthCompare() {
                 const delta = prev ? point.netProfit - prev.netProfit : 0;
                 return (
                   <tr key={point.key} className="border-b border-border/70">
-                    <td className="px-2 py-2 text-white">{point.label}</td>
+                    <td className="px-2 py-2 text-foreground">{point.label}</td>
                     <td className="px-2 py-2 text-slate-300">{formatMoney(point.revenue, currency)}</td>
                     <td className="px-2 py-2 text-slate-300">{formatMoney(point.expenses, currency)}</td>
-                    <td className="px-2 py-2 text-white">{formatMoney(point.netProfit, currency)}</td>
+                    <td className="px-2 py-2 text-foreground">{formatMoney(point.netProfit, currency)}</td>
                     <td className={cn("px-2 py-2", !prev ? "text-muted" : delta >= 0 ? "text-accent" : "text-danger")}>
                       {!prev ? "—" : `${delta >= 0 ? "+" : ""}${formatMoney(delta, currency)}`}
                     </td>

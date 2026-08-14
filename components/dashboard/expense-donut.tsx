@@ -33,7 +33,7 @@ export function ExpenseDonut() {
           </ResponsiveContainer>
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-xs text-muted">الإجمالي</span>
-            <span className="text-lg font-bold text-white">{formatMoney(total, currency, { compact: true })}</span>
+            <span className="text-lg font-bold text-foreground">{formatMoney(total, currency, { compact: true })}</span>
           </div>
         </div>
         <ul className="mt-2 space-y-2">

@@ -11,10 +11,10 @@ export function Badge({
 }) {
   const tones = {
     neutral: "bg-white/5 text-slate-300",
-    success: "bg-emerald-500/15 text-emerald-400",
+    success: "bg-teal-500/15 text-primary",
     danger: "bg-red-500/15 text-red-400",
-    info: "bg-blue-500/15 text-blue-400",
-    warning: "bg-amber-500/15 text-amber-400",
+    info: "bg-cyan-500/15 text-cyan-300",
+    warning: "bg-amber-500/15 text-accent",
   };
 
   return (

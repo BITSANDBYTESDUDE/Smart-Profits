@@ -28,7 +28,7 @@ export function RiskRadar() {
         {result.advisor.risks.map((risk) => (
           <div key={risk.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border p-3">
             <div>
-              <p className="text-sm font-medium text-white">{risk.label}</p>
+              <p className="text-sm font-medium text-foreground">{risk.label}</p>
               <p className="text-xs text-muted">{risk.reason}</p>
             </div>
             <Badge tone={LEVEL[risk.level].tone}>{LEVEL[risk.level].label}</Badge>

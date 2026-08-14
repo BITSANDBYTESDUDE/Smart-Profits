@@ -7,6 +7,7 @@ import { CloudUpload, FileSpreadsheet, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { OpexSetupModal } from "@/components/opex/opex-setup-modal";
 import { useAnalysis } from "@/context/analysis-context";
+import { useAppearance } from "@/context/appearance";
 import type { AppSettings } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +22,7 @@ export function FileDropzone({
   redirectToAnalysis?: boolean;
 }) {
   const { analyzeFile, isProcessing, saveSettings } = useAnalysis();
+  const { t } = useAppearance();
   const router = useRouter();
   const [setupOpen, setSetupOpen] = useState(false);
   const [hasPending, setHasPending] = useState(false);
@@ -35,17 +37,13 @@ export function FileDropzone({
         for (const file of selected) {
           await analyzeFile(file);
         }
-        toast.success(
-          selected.length > 1
-            ? `تمت دراسة ${selected.length} ملفات بكل أوراق العمل. اختر ملفاً من القائمة لعرض تحليله.`
-            : "تمت دراسة كل أوراق Excel ودمجها. التحليل باقٍ أمامك.",
-        );
+        toast.success(selected.length > 1 ? t("data.analyzedMany") : t("data.analyzedOne"));
         router.replace("/data");
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "تعذر تحليل الملف");
+        toast.error(error instanceof Error ? error.message : t("data.analyzeFail"));
       }
     },
-    [analyzeFile, router],
+    [analyzeFile, router, t],
   );
 
   const onDrop = useCallback(
@@ -136,7 +134,7 @@ export function FileDropzone({
         }}
         className={cn(
           "cursor-pointer rounded-2xl border-2 border-dashed transition",
-          isDragActive ? "border-primary bg-primary/10" : "border-slate-600/70 bg-card/50 hover:border-primary/60",
+          isDragActive ? "border-primary bg-primary/10" : "border-border bg-card/50 hover:border-primary/60",
           compact ? "p-6" : "p-10",
         )}
       >
@@ -145,16 +143,16 @@ export function FileDropzone({
           <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/15 text-primary">
             {isProcessing ? <Loader2 className="h-7 w-7 animate-spin" /> : <CloudUpload className="h-7 w-7" />}
           </div>
-          <p className="text-base font-medium text-white">
-            {title ?? (isProcessing ? "جاري قراءة الملف واستخراج الأعمدة..." : "اسحب ملف Excel أو CSV أو PDF أو صورة هنا")}
+          <p className="text-base font-medium text-foreground">
+            {title ?? (isProcessing ? t("data.studying") : t("data.drop"))}
           </p>
-          <p className="mt-1 text-sm text-muted">{hint ?? "أو اضغط للرفع • الحد الأقصى 50MB"}</p>
-          <p className="mt-2 max-w-md text-xs leading-6 text-amber-200/80">
-            قبل التحليل نسألك عن الإيجار والرواتب والفواتير حتى لا يُحسب ربح وهمي من ملف المبيعات وحده.
+          <p className="mt-1 text-sm text-muted">{hint ?? t("data.orClick")}</p>
+          <p className="mt-2 max-w-md text-xs leading-6 text-amber-700 dark:text-amber-200/80">
+            {t("data.opexHint")}
           </p>
-          <div className="mt-3 flex items-center gap-2 text-xs text-slate-500">
+          <div className="mt-3 flex items-center gap-2 text-xs text-muted">
             <FileSpreadsheet className="h-3.5 w-3.5" />
-            ندعم Excel بكل أوراقه (يناير، فبراير، الملخص...) وCSV وPDF والصور
+            {t("data.formats")}
           </div>
         </div>
       </div>
@@ -163,8 +161,8 @@ export function FileDropzone({
         onClose={handleClose}
         onConfirm={handleConfirm}
         onSkip={handleConfirmSkip}
-        confirmLabel={hasPending ? "حفظ ثم تحليل الملف" : "متابعة لرفع الملف"}
-        skipLabel="تخطي ومتابعة الرفع"
+        confirmLabel={hasPending ? t("opex.confirmAnalyze") : t("opex.confirmUpload")}
+        skipLabel={t("opex.skipUpload")}
       />
     </>
   );

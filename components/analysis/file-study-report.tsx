@@ -31,7 +31,7 @@ export function FileStudyReport() {
     return (
       <Card className="p-8 text-center">
         <FileSearch className="mx-auto mb-3 h-10 w-10 text-slate-500" />
-        <p className="text-white">لا يوجد ملف مدروس بعد.</p>
+        <p className="text-foreground">لا يوجد ملف مدروس بعد.</p>
         <p className="mt-2 text-sm text-muted">ارفع Excel أو PDF أو صورة من صفحة رفع الملفات.</p>
         <Link href="/data">
           <Button className="mt-4">الذهاب لرفع ملف</Button>
@@ -83,13 +83,13 @@ export function FileStudyReport() {
         <div className="flex flex-wrap items-start gap-3">
           <CheckCircle2 className="mt-0.5 h-6 w-6 text-accent" />
           <div className="flex-1">
-            <h2 className="text-lg font-semibold text-white">تم دراسة الملف بنجاح</h2>
+            <h2 className="text-lg font-semibold text-foreground">تم دراسة الملف بنجاح</h2>
             <p className="mt-1 text-sm leading-7 text-slate-300">
               تم مسح{" "}
-              <span className="text-white">{parseResult.sheets?.length ?? 1}</span> ورقة عمل، وتنظيف{" "}
-              <span className="text-white">{cleaning?.sourceRows ?? parseResult.rowCount}</span> صفاً، واكتشاف{" "}
-              <span className="text-white">{totalColumns}</span> أعمدة، وفهم{" "}
-              <span className="text-white">{mappedCount}</span> منها
+              <span className="text-foreground">{parseResult.sheets?.length ?? 1}</span> ورقة عمل، وتنظيف{" "}
+              <span className="text-foreground">{cleaning?.sourceRows ?? parseResult.rowCount}</span> صفاً، واكتشاف{" "}
+              <span className="text-foreground">{totalColumns}</span> أعمدة، وفهم{" "}
+              <span className="text-foreground">{mappedCount}</span> منها
               {parseResult.sheetName ? ` — المصدر: ${parseResult.sheetName}` : ""}.
             </p>
             {isDemo && <Badge tone="warning" className="mt-2">بيانات تجريبية للعرض</Badge>}
@@ -106,7 +106,7 @@ export function FileStudyReport() {
             {parseResult.sheets.map((sheet) => (
               <div key={sheet.name} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-white/3 px-4 py-3">
                 <div>
-                  <p className="text-sm font-medium text-white">{sheet.name}</p>
+                  <p className="text-sm font-medium text-foreground">{sheet.name}</p>
                   <p className="text-xs text-muted">
                     {sheet.rows} صف • {sheet.validRows} صالح
                     {sheet.reason ? ` — ${sheet.reason}` : ""}
@@ -134,19 +134,19 @@ export function FileStudyReport() {
         <div className="grid gap-3 md:grid-cols-5">
           <Card className="p-4">
             <p className="text-xs text-muted">صفوف نُظّفت</p>
-            <p className="mt-2 text-2xl font-bold text-white">{cleaning.validRows}</p>
+            <p className="mt-2 text-2xl font-bold text-foreground">{cleaning.validRows}</p>
           </Card>
           <Card className="p-4">
             <p className="text-xs text-muted">أعمدة اكتُشفت</p>
-            <p className="mt-2 text-2xl font-bold text-white">{cleaning.columnsDetected}</p>
+            <p className="mt-2 text-2xl font-bold text-foreground">{cleaning.columnsDetected}</p>
           </Card>
           <Card className="p-4">
             <p className="text-xs text-muted">قيم أُصلحت</p>
-            <p className="mt-2 text-2xl font-bold text-white">{cleaning.valuesFixed}</p>
+            <p className="mt-2 text-2xl font-bold text-foreground">{cleaning.valuesFixed}</p>
           </Card>
           <Card className="p-4">
             <p className="text-xs text-muted">مكررات حُذفت</p>
-            <p className="mt-2 text-2xl font-bold text-white">{cleaning.duplicatesRemoved}</p>
+            <p className="mt-2 text-2xl font-bold text-foreground">{cleaning.duplicatesRemoved}</p>
           </Card>
           <Card className="p-4">
             <p className="text-xs text-muted">تحتاج مراجعة</p>
@@ -157,25 +157,25 @@ export function FileStudyReport() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card className="p-4">
           <p className="text-xs text-muted">عدد الأعمدة المكتشفة</p>
-          <p className="mt-2 flex items-center gap-2 text-2xl font-bold text-white">
+          <p className="mt-2 flex items-center gap-2 text-2xl font-bold text-foreground">
             <Columns3 className="h-5 w-5 text-primary" />
             {totalColumns}
           </p>
         </Card>
         <Card className="p-4">
           <p className="text-xs text-muted">الصفوف الصالحة</p>
-          <p className="mt-2 flex items-center gap-2 text-2xl font-bold text-white">
+          <p className="mt-2 flex items-center gap-2 text-2xl font-bold text-foreground">
             <Rows3 className="h-5 w-5 text-accent" />
             {parseResult.rowCount}
           </p>
         </Card>
         <Card className="p-4">
           <p className="text-xs text-muted">المنتجات</p>
-          <p className="mt-2 text-2xl font-bold text-white">{products}</p>
+          <p className="mt-2 text-2xl font-bold text-foreground">{products}</p>
         </Card>
         <Card className="p-4">
           <p className="text-xs text-muted">فترة البيانات</p>
-          <p className="mt-2 text-sm font-medium text-white">
+          <p className="mt-2 text-sm font-medium text-foreground">
             {from && to ? `${formatDateAr(from)} — ${formatDateAr(to)}` : "بدون تاريخ"}
           </p>
         </Card>
@@ -189,7 +189,7 @@ export function FileStudyReport() {
           {mappedEntries.map((entry) => (
             <div key={entry.role} className="rounded-xl border border-border bg-white/3 p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm font-semibold text-white">
+                <p className="text-sm font-semibold text-foreground">
                   عمود الملف: <span className="text-accent">{entry.header}</span>
                 </p>
                 <Badge tone={entry.score >= 80 ? "success" : "info"}>ثقة {Math.round(entry.score)}%</Badge>

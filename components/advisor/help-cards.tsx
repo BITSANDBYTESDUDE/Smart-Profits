@@ -1,32 +1,35 @@
+"use client";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAppearance } from "@/context/appearance";
 
 export function AdvisorHelpCards() {
+  const { t } = useAppearance();
   return (
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle>صيغة الملف المفضلة</CardTitle>
+          <CardTitle>{t("advisor.help.file")}</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2 text-sm leading-7 text-slate-300">
-          <p>ارفع Excel حتى لو كانت الأعمدة فوضوية (سعر، Price، بيع). النظام ينظّف الصفوف ويشخّص المتجر ويقترح 3 قرارات لليوم.</p>
-          <p>الأعمدة المدعومة:</p>
+        <CardContent className="space-y-2 text-sm leading-7 text-muted">
+          <p>{t("advisor.help.file.body")}</p>
+          <p>{t("advisor.help.cols")}:</p>
           <ul className="list-disc pe-5">
-            <li>التاريخ / Date</li>
-            <li>سعر البيع / Price / المبيعات</li>
-            <li>التكلفة / Cost / المشتريات</li>
-            <li>الكمية / Quantity</li>
-            <li>المصروف / Expense</li>
+            <li>Date / التاريخ</li>
+            <li>Product / Description / اسم المنتج</li>
+            <li>Quantity / الكمية</li>
+            <li>Price / Selling Price / سعر البيع</li>
+            <li>Cost / COGS / التكلفة</li>
+            <li>Sales / Revenue / المبيعات</li>
+            <li>Expense / المصروف</li>
           </ul>
-          <p>يمكن كتابة الأرقام مع ر.س أو $ أو فواصل. الصور وملفات PDF الممسوحة تُقرأ إذا كانت الأعمدة واضحة.</p>
         </CardContent>
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle>كيف يُحسب صافي الربح؟</CardTitle>
+          <CardTitle>{t("advisor.help.net")}</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm leading-7 text-slate-300">
-          صافي الربح = إجمالي المبيعات − (تكلفة البضاعة المباعة + المصاريف التشغيلية). المصاريف الثابتة من الإعدادات تُضاف لكل شهر.
-        </CardContent>
+        <CardContent className="text-sm leading-7 text-muted">{t("advisor.help.net.body")}</CardContent>
       </Card>
     </div>
   );

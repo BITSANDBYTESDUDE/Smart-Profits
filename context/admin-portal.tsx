@@ -2,7 +2,14 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { DateRangeKey } from "@/lib/admin/config";
-import { buildAdminSnapshot, saveUserOverride } from "@/lib/admin/metrics";
+import {
+  buildAdminSnapshot,
+  buildAdminSnapshotFromFacts,
+  collectClientFacts,
+  mergeFacts,
+  saveUserOverride,
+  type AdminFacts,
+} from "@/lib/admin/metrics";
 import type { AdminSnapshot, AdminUserRow } from "@/lib/admin/types";
 
 interface AdminPortalValue {
@@ -37,8 +44,33 @@ export function AdminPortalProvider({ children }: { children: React.ReactNode })
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    setSnapshot(buildAdminSnapshot(range, from, to));
-    setReady(true);
+    let cancelled = false;
+    async function load() {
+      const local = collectClientFacts();
+      try {
+        const params = new URLSearchParams({ range, from, to });
+        const response = await fetch(`/api/admin/snapshot?${params.toString()}`);
+        if (response.ok) {
+          const serverFacts = (await response.json()) as AdminFacts;
+          const merged = buildAdminSnapshotFromFacts(mergeFacts(local, serverFacts), range, from, to);
+          if (!cancelled) {
+            setSnapshot(merged);
+            setReady(true);
+          }
+          return;
+        }
+      } catch {
+        // fall through to local
+      }
+      if (!cancelled) {
+        setSnapshot(buildAdminSnapshot(range, from, to));
+        setReady(true);
+      }
+    }
+    void load();
+    return () => {
+      cancelled = true;
+    };
   }, [range, from, to, tick]);
 
   const setRange = useCallback((key: DateRangeKey) => {
@@ -55,6 +87,12 @@ export function AdminPortalProvider({ children }: { children: React.ReactNode })
 
   const patchUser = useCallback((id: string, patch: Partial<AdminUserRow>) => {
     saveUserOverride(id, patch);
+    const email = id.replace(/^real-/, "");
+    void fetch("/api/admin/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, plan: patch.plan, status: patch.status }),
+    }).catch(() => undefined);
     setTick((n) => n + 1);
   }, []);
 

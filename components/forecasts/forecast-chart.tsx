@@ -40,8 +40,8 @@ export function ForecastChart() {
               contentStyle={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 12 }}
               formatter={(value) => formatMoney(currency === "USD" ? Number(value) * 3.75 : Number(value), currency)}
             />
-            <Line type="monotone" dataKey="actual" stroke="#10b981" strokeWidth={3} dot={false} connectNulls={false} />
-            <Line type="monotone" dataKey="forecast" stroke="#60a5fa" strokeWidth={2} strokeDasharray="7 6" dot={false} />
+            <Line type="monotone" dataKey="actual" stroke="#4fd1c5" strokeWidth={3} dot={false} connectNulls={false} />
+            <Line type="monotone" dataKey="forecast" stroke="#e8c56b" strokeWidth={2} strokeDasharray="7 6" dot={false} />
           </LineChart>
         </ResponsiveContainer>
       </CardContent>

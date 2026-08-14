@@ -19,7 +19,7 @@ export function ActionLogList() {
         <div className="flex items-start gap-3">
           <ClipboardList className="mt-0.5 h-6 w-6 text-accent" />
           <div>
-            <h2 className="text-lg font-semibold text-white">سجل «تطبيق التعديل»</h2>
+            <h2 className="text-lg font-semibold text-foreground">سجل «تطبيق التعديل»</h2>
             <p className="mt-1 text-sm leading-7 text-slate-300">
               التوصيات التي تضغط عليها من المحاكي والتوقعات تُحفظ هنا مرتبطة بالملف المفتوح وقتها.
             </p>
@@ -30,7 +30,7 @@ export function ActionLogList() {
       {actionLog.length === 0 ? (
         <Card className="p-8 text-center">
           <CheckCircle2 className="mx-auto mb-3 h-10 w-10 text-slate-500" />
-          <p className="text-white">لا توجد إجراءات مسجّلة بعد.</p>
+          <p className="text-foreground">لا توجد إجراءات مسجّلة بعد.</p>
           <p className="mt-2 text-sm text-muted">افتح المحاكي والتوقعات واضغط تطبيق التعديل على توصية.</p>
           <Link href="/simulator">
             <Button className="mt-4">الذهاب للمحاكاة</Button>
@@ -45,7 +45,7 @@ export function ActionLogList() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-sm font-semibold text-white">{entry.title}</h3>
+                      <h3 className="text-sm font-semibold text-foreground">{entry.title}</h3>
                       <Badge tone={entry.status === "applied" ? "success" : "info"}>
                         {entry.status === "applied" ? "تم التطبيق" : "تمت المراجعة"}
                       </Badge>

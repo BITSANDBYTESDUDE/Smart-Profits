@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useAdminPortal } from "@/context/admin-portal";
+import { useAppearance } from "@/context/appearance";
 import type { AccountStatus, PlanTier } from "@/lib/admin/config";
 import { formatUsd } from "@/lib/admin/money";
 import type { AdminUserRow } from "@/lib/admin/types";
@@ -35,6 +36,7 @@ const PLAN_LABEL: Record<PlanTier, string> = {
 
 export default function AdminUsersPage() {
   const { snapshot, ready, patchUser } = useAdminPortal();
+  const { t } = useAppearance();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<"all" | AccountStatus>("all");
   const [viewing, setViewing] = useState<AdminUserRow | null>(null);
@@ -59,14 +61,14 @@ export default function AdminUsersPage() {
 
   const planData = [
     { name: "مجانية", value: snapshot.planSplit.free, color: "#94a3b8" },
-    { name: "احترافية", value: snapshot.planSplit.pro, color: "#10b981" },
-    { name: "أعمال", value: snapshot.planSplit.business, color: "#3b82f6" },
+    { name: "احترافية", value: snapshot.planSplit.pro, color: "#4fd1c5" },
+    { name: "أعمال", value: snapshot.planSplit.business, color: "#e8c56b" },
   ];
   const totalPlans = Math.max(1, snapshot.planSplit.free + snapshot.planSplit.pro + snapshot.planSplit.business);
 
   return (
     <>
-      <AdminHeader title="إدارة المستخدمين والتفاعل" subtitle="مين سجّل، مين مستمر، ومين ألغى حسابه" />
+      <AdminHeader title={t("admin.users.title")} subtitle={t("admin.users.subtitle")} />
       <div className="space-y-5 p-6">
         <div className="grid gap-4 md:grid-cols-3">
           <AdminKpi title="معدل الاحتفاظ" value={`${snapshot.retention}%`} hint="Retention Rate" icon={Users} />
@@ -124,7 +126,7 @@ export default function AdminUsersPage() {
                   />
                 </div>
                 <select
-                  className="h-11 rounded-xl border border-border bg-[#0f172a]/80 px-3 text-sm text-white"
+                  className="h-11 rounded-xl border border-border bg-background px-3 text-sm text-foreground"
                   value={status}
                   onChange={(event) => setStatus(event.target.value as "all" | AccountStatus)}
                 >
@@ -150,10 +152,17 @@ export default function AdminUsersPage() {
                     </tr>
                   </thead>
                   <tbody>
+                    {filtered.length === 0 && (
+                      <tr>
+                        <td colSpan={8} className="px-3 py-6 text-sm text-muted">
+                          لا يوجد تجار مطابقون. الحسابات تظهر هنا بعد التسجيل الحقيقي.
+                        </td>
+                      </tr>
+                    )}
                     {filtered.map((user) => (
                       <tr key={user.id} className="border-b border-border/70">
                         <td className="px-3 py-3">
-                          <p className="font-medium text-white">{user.name}</p>
+                          <p className="font-medium text-foreground">{user.name}</p>
                           <p className="text-xs text-muted">{user.store}</p>
                         </td>
                         <td className="px-3 py-3 text-slate-300">{user.email}</td>
@@ -162,7 +171,7 @@ export default function AdminUsersPage() {
                           <Badge tone={STATUS_TONE[user.status]}>{STATUS_LABEL[user.status]}</Badge>
                         </td>
                         <td className="px-3 py-3 text-slate-300">{PLAN_LABEL[user.plan]}</td>
-                        <td className="px-3 py-3 text-white">{user.filesUploaded}</td>
+                        <td className="px-3 py-3 text-foreground">{user.filesUploaded}</td>
                         <td className="px-3 py-3 text-muted">
                           {new Date(user.lastActive).toLocaleString("ar-SA", { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" })}
                         </td>
@@ -208,7 +217,7 @@ export default function AdminUsersPage() {
       {viewing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setViewing(null)}>
           <Card className="w-full max-w-md p-5" onClick={(event) => event.stopPropagation()}>
-            <p className="text-lg font-semibold text-white">{viewing.store}</p>
+            <p className="text-lg font-semibold text-foreground">{viewing.store}</p>
             <p className="mt-1 text-sm text-muted">{viewing.name} • {viewing.email}</p>
             <div className="mt-4 space-y-2 text-sm text-slate-300">
               <p>الحالة: {STATUS_LABEL[viewing.status]}</p>

@@ -6,6 +6,7 @@ import { AdminKpi } from "@/components/admin/admin-kpi";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAdminPortal } from "@/context/admin-portal";
+import { useAppearance } from "@/context/appearance";
 import { formatUsd, formatUsdPrecise } from "@/lib/admin/money";
 
 const TX_TONE = {
@@ -22,6 +23,7 @@ const TX_LABEL = {
 
 export default function AdminFinancialsPage() {
   const { snapshot, ready } = useAdminPortal();
+  const { t } = useAppearance();
 
   if (!ready || !snapshot) {
     return <p className="p-6 text-sm text-muted">جاري تحميل الخزينة...</p>;
@@ -40,7 +42,7 @@ export default function AdminFinancialsPage() {
 
   return (
     <>
-      <AdminHeader title="تحليلات المالية والخزينة" subtitle="وين دخل ووين طلع — ضبط شؤون Smart Profits" />
+      <AdminHeader title={t("admin.financials.title")} subtitle={t("admin.financials.subtitle")} />
       <div className="space-y-5 p-6">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <AdminKpi title="إجمالي المداخيل" value={formatUsd(snapshot.inflow.total)} hint="Inflow" icon={TrendingUp} />
@@ -63,7 +65,7 @@ export default function AdminFinancialsPage() {
               ))}
               <div className="flex items-center justify-between border-t border-border pt-3 text-sm">
                 <span className="text-muted">الإجمالي</span>
-                <span className="font-bold text-white">{formatUsd(snapshot.inflow.total)}</span>
+                <span className="font-bold text-foreground">{formatUsd(snapshot.inflow.total)}</span>
               </div>
             </CardContent>
           </Card>
@@ -87,7 +89,7 @@ export default function AdminFinancialsPage() {
               })}
               <div className="flex items-center justify-between border-t border-border pt-3 text-sm">
                 <span className="text-muted">الإجمالي</span>
-                <span className="font-bold text-white">{formatUsd(snapshot.outflow.total)}</span>
+                <span className="font-bold text-foreground">{formatUsd(snapshot.outflow.total)}</span>
               </div>
             </CardContent>
           </Card>
@@ -96,12 +98,12 @@ export default function AdminFinancialsPage() {
         <div className="grid gap-4 md:grid-cols-2">
           <Card className="p-5">
             <p className="text-sm text-muted">مؤشرات SaaS</p>
-            <p className="mt-3 text-3xl font-bold text-white">{formatUsd(snapshot.mrr)}</p>
+            <p className="mt-3 text-3xl font-bold text-foreground">{formatUsd(snapshot.mrr)}</p>
             <p className="mt-1 text-sm text-slate-400">Monthly Recurring Revenue</p>
           </Card>
           <Card className="p-5">
             <p className="text-sm text-muted">متوسط ما يدفعه التاجر</p>
-            <p className="mt-3 text-3xl font-bold text-white">{formatUsdPrecise(snapshot.arpu)}</p>
+            <p className="mt-3 text-3xl font-bold text-foreground">{formatUsdPrecise(snapshot.arpu)}</p>
             <p className="mt-1 text-sm text-slate-400">ARPU — Average Revenue Per User</p>
           </Card>
         </div>
@@ -123,12 +125,19 @@ export default function AdminFinancialsPage() {
                 </tr>
               </thead>
               <tbody>
+                {snapshot.transactions.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-3 py-6 text-sm text-muted">
+                      لا توجد اشتراكات مدفوعة بعد. التجار الحاليون على الخطة المجانية.
+                    </td>
+                  </tr>
+                )}
                 {snapshot.transactions.map((row) => (
                   <tr key={row.invoice} className="border-b border-border/70">
                     <td className="px-3 py-3 font-mono text-xs text-slate-300">{row.invoice}</td>
-                    <td className="px-3 py-3 text-white">{row.merchant}</td>
+                    <td className="px-3 py-3 text-foreground">{row.merchant}</td>
                     <td className="px-3 py-3 text-slate-300">{row.plan}</td>
-                    <td className="px-3 py-3 text-white">{formatUsd(row.amount)}</td>
+                    <td className="px-3 py-3 text-foreground">{formatUsd(row.amount)}</td>
                     <td className="px-3 py-3">
                       <Badge tone={TX_TONE[row.status]}>{TX_LABEL[row.status]}</Badge>
                     </td>

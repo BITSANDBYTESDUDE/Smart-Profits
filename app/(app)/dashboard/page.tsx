@@ -17,6 +17,8 @@ import { MonthCompare } from "@/components/advisor/month-compare";
 import { OpexInsights } from "@/components/dashboard/opex-insights";
 import { AppHeader } from "@/components/layout/app-header";
 import { useAnalysis } from "@/context/analysis-context";
+import { useAppearance } from "@/context/appearance";
+import { useAuth } from "@/context/auth-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -24,17 +26,16 @@ import { trackPlatform } from "@/lib/admin/track";
 
 export default function DashboardPage() {
   const { result, isDemo } = useAnalysis();
+  const { user } = useAuth();
+  const { t } = useAppearance();
 
   useEffect(() => {
-    if (result) trackPlatform("doctor");
-  }, [result]);
+    if (result) trackPlatform("doctor", undefined, user?.email);
+  }, [result, user?.email]);
 
   return (
     <>
-      <AppHeader
-        title="لوحة التحكم والتشخيص"
-        subtitle="ملخص مالي + صحة المتجر + قرارات اليوم في شاشة واحدة"
-      />
+      <AppHeader title={t("dash.title")} subtitle={t("dash.subtitle")} />
       <motion.div
         className="space-y-5 p-6"
         initial={{ opacity: 0, y: 12 }}
@@ -42,14 +43,14 @@ export default function DashboardPage() {
         transition={{ duration: 0.35 }}
       >
         {isDemo && (
-          <Badge tone="warning">وضع العرض التجريبي — ارفع ملفاتك من إدارة البيانات لتشخيص متجرك الحقيقي</Badge>
+          <Badge tone="warning">{t("dash.demo")}</Badge>
         )}
 
         {!result && (
           <Card className="p-8 text-center">
-            <p className="text-white">ارفع ملف مبيعاتك لتظهر الأرقام والتشخيص هنا.</p>
+            <p className="text-foreground">{t("dash.needFile")}</p>
             <Link href="/data">
-              <Button className="mt-4">إدارة الملفات والبيانات</Button>
+              <Button className="mt-4">{t("dash.goData")}</Button>
             </Link>
           </Card>
         )}

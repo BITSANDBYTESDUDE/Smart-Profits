@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { detectColumns } from "./mapping";
+import { detectColumns, isUnspecifiedProduct } from "./mapping";
 import type { ParseResult, SheetScan, Transaction } from "./types";
 import { FileParseError } from "./types";
 import { classifySheetName, dateFromSheetName, objectsFromSheet } from "./sheets";
@@ -22,6 +22,33 @@ const ARABIC_MONTHS: Record<string, number> = {
   أكتوبر: 9,
   نوفمبر: 10,
   ديسمبر: 11,
+};
+
+const ENGLISH_MONTHS: Record<string, number> = {
+  january: 0,
+  jan: 0,
+  february: 1,
+  feb: 1,
+  march: 2,
+  mar: 2,
+  april: 3,
+  apr: 3,
+  may: 4,
+  june: 5,
+  jun: 5,
+  july: 6,
+  jul: 6,
+  august: 7,
+  aug: 7,
+  september: 8,
+  sep: 8,
+  sept: 8,
+  october: 9,
+  oct: 9,
+  november: 10,
+  nov: 10,
+  december: 11,
+  dec: 11,
 };
 
 function toAsciiDigits(value: string) {
@@ -71,16 +98,30 @@ export function parseDate(value: unknown): Date | null {
 
   const dmy = raw.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})$/);
   if (dmy) {
-    const day = Number(dmy[1]);
-    const month = Number(dmy[2]) - 1;
+    const first = Number(dmy[1]);
+    const second = Number(dmy[2]);
     const yearRaw = Number(dmy[3]);
     const year = yearRaw < 100 ? 2000 + yearRaw : yearRaw;
+    const day = second > 12 ? second : first;
+    const month = (second > 12 ? first : first > 12 ? second : second) - 1;
     const date = new Date(year, month, day);
-    if (!Number.isNaN(date.getTime())) return date;
+    if (!Number.isNaN(date.getTime()) && date.getMonth() === month && date.getDate() === day) {
+      return date;
+    }
   }
 
+  const lower = raw.toLowerCase();
   for (const [name, month] of Object.entries(ARABIC_MONTHS)) {
     if (raw.includes(name)) {
+      const yearMatch = raw.match(/\d{4}/);
+      const dayMatch = raw.match(/\b(\d{1,2})\b/);
+      const year = yearMatch ? Number(yearMatch[0]) : new Date().getFullYear();
+      const day = dayMatch ? Number(dayMatch[1]) : 1;
+      return new Date(year, month, day);
+    }
+  }
+  for (const [name, month] of Object.entries(ENGLISH_MONTHS)) {
+    if (new RegExp(`(?:^|\\b)${name}(?:\\b|$)`, "i").test(lower)) {
       const yearMatch = raw.match(/\d{4}/);
       const dayMatch = raw.match(/\b(\d{1,2})\b/);
       const year = yearMatch ? Number(yearMatch[0]) : new Date().getFullYear();
@@ -204,6 +245,10 @@ function rowsFromObjects(
     const idx = warnings.findIndex((warning) => warning.includes("عمود تاريخ"));
     if (idx >= 0) warnings.splice(idx, 1);
   }
+  const latinHeaders = headers.filter((h) => /[a-z]/i.test(h)).length;
+  const arabicHeaders = headers.filter((h) => /[\u0600-\u06FF]/.test(h)).length;
+  const unspecified = latinHeaders > arabicHeaders ? "Unspecified" : "غير محدد";
+  const generalCat = latinHeaders > arabicHeaders ? "General" : "عام";
   const transactions: Transaction[] = [];
   let skippedRows = 0;
   let valuesFixed = 0;
@@ -239,20 +284,20 @@ function rowsFromObjects(
 
     const parsed = TransactionSchema.safeParse({
       date: (mapping.date ? parseDate(row[mapping.date]) : null) ?? options?.dateOverride ?? null,
-      product: mapping.product ? String(row[mapping.product] ?? "").trim() : "غير محدد",
+      product: mapping.product ? String(row[mapping.product] ?? "").trim() || unspecified : unspecified,
       sku: mapping.sku ? String(row[mapping.sku] ?? "").trim() : "",
       quantity: Number.isFinite(quantity) ? quantity : 1,
       sellingPrice,
       costPrice,
       revenue,
       expense,
-      category: mapping.category ? String(row[mapping.category] ?? "").trim() || "عام" : "عام",
+      category: mapping.category ? String(row[mapping.category] ?? "").trim() || generalCat : generalCat,
       expenseType: mapping.expenseType
         ? String(row[mapping.expenseType] ?? "").trim()
         : "",
       notes: mapping.notes
         ? String(row[mapping.notes] ?? "").trim()
-        : String(row["الملاحظات"] ?? row["ملاحظات"] ?? "").trim(),
+        : String(row["الملاحظات"] ?? row["ملاحظات"] ?? row["Notes"] ?? row["notes"] ?? "").trim(),
       sourceSheet: options?.sourceSheet,
     });
 
@@ -267,7 +312,7 @@ function rowsFromObjects(
       continue;
     }
     seen.add(stamp);
-    if (!parsed.data.date || parsed.data.product === "غير محدد") reviewNeeded += 1;
+    if (!parsed.data.date || isUnspecifiedProduct(parsed.data.product)) reviewNeeded += 1;
 
     transactions.push(parsed.data);
   }
@@ -458,7 +503,7 @@ async function parseExcel(buffer: ArrayBuffer, fileName: string): Promise<ParseR
         continue;
       }
       seen.add(stamp);
-      if (!tx.date || tx.product === "غير محدد") reviewNeeded += 1;
+      if (!tx.date || isUnspecifiedProduct(tx.product)) reviewNeeded += 1;
       transactions.push(tx);
     }
   }

@@ -12,23 +12,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SectionTabs } from "@/components/ui/section-tabs";
 import { useAnalysis } from "@/context/analysis-context";
+import { useAppearance } from "@/context/appearance";
 import { exportMonthlyReport } from "@/lib/export-report";
-import { ARABIC_MONTHS, formatMoney } from "@/lib/format";
+import { formatMoney } from "@/lib/format";
 import type { AppSettings, CurrencyCode } from "@/lib/types";
-
-const TABS = [
-  { id: "store", label: "إعدادات المتجر" },
-  { id: "actions", label: "سجل الإجراءات" },
-  { id: "reports", label: "تحميل التقارير" },
-];
 
 function SettingsPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t, months } = useAppearance();
   const requested = searchParams.get("tab");
   const tab = requested === "actions" || requested === "reports" ? requested : "store";
   const { settings, saveSettings, result, currency, parseResult } = useAnalysis();
   const [form, setForm] = useState<AppSettings>(settings);
+  const tabs = [
+    { id: "store", label: t("settings.tab.store") },
+    { id: "actions", label: t("settings.tab.actions") },
+    { id: "reports", label: t("settings.tab.reports") },
+  ];
 
   useEffect(() => {
     setForm(settings);
@@ -39,11 +40,11 @@ function SettingsPageInner() {
       .slice()
       .reverse()
       .map((point) => ({
-        title: `تقرير ${ARABIC_MONTHS[point.month]} ${point.year}`,
+        title: `${t("settings.reportOf")} ${months[point.month]} ${point.year}`,
         profit: point.netProfit,
         key: point.key,
       }));
-  }, [result]);
+  }, [result, t, months]);
 
   function setTab(id: string) {
     router.replace(id === "store" ? "/settings" : `/settings?tab=${id}`);
@@ -51,12 +52,12 @@ function SettingsPageInner() {
 
   function save() {
     saveSettings({ ...form, opexSetupCompleted: true });
-    toast.success("تم حفظ التغييرات وإعادة حساب صافي الربح.");
+    toast.success(t("settings.saved"));
   }
 
   function exportReport(monthKey: string, mode: "html" | "pdf", scope: "month" | "all" = "month") {
     if (!result || !parseResult) {
-      toast.error("ارفع ملفاً أولاً حتى يُبنى التقرير.");
+      toast.error(t("settings.needFile"));
       return;
     }
     try {
@@ -72,83 +73,76 @@ function SettingsPageInner() {
         },
         mode,
       );
-      toast.success(mode === "pdf" ? "افتح نافذة الطباعة واحفظ التقرير PDF." : "تم تنزيل التقرير HTML الكامل.");
+      toast.success(mode === "pdf" ? t("settings.pdfOk") : t("settings.htmlOk"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "تعذر تصدير التقرير.");
+      toast.error(error instanceof Error ? error.message : t("settings.exportFail"));
     }
   }
 
   return (
     <>
-      <AppHeader
-        title="التقارير والإعدادات"
-        subtitle="إعدادات المتجر، سجل الإجراءات المطبقة، وتصدير التقارير الشهرية"
-      />
+      <AppHeader title={t("settings.title")} subtitle={t("settings.subtitle")} />
       <div className="space-y-5 p-6">
-        <SectionTabs tabs={TABS} value={tab} onChange={setTab} />
+        <SectionTabs tabs={tabs} value={tab} onChange={setTab} />
 
         {tab === "store" && (
           <Card>
             <CardHeader>
-              <CardTitle>إدارة الحساب</CardTitle>
+              <CardTitle>{t("settings.account")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
-                  <Label>اسم المتجر</Label>
+                  <Label>{t("settings.storeName")}</Label>
                   <Input value={form.storeName} onChange={(e) => setForm({ ...form, storeName: e.target.value })} />
                 </div>
                 <div>
-                  <Label>العملة الافتراضية</Label>
+                  <Label>{t("settings.currency")}</Label>
                   <select
-                    className="h-11 w-full rounded-xl border border-border bg-[#0f172a]/80 px-3 text-sm text-white outline-none"
+                    className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none"
                     value={form.defaultCurrency}
                     onChange={(e) => setForm({ ...form, defaultCurrency: e.target.value as CurrencyCode })}
                   >
-                    <option value="SAR">ريال سعودي (SAR)</option>
-                    <option value="USD">دولار أمريكي (USD)</option>
-                    <option value="AED">درهم إماراتي (AED)</option>
-                    <option value="JOD">دينار أردني (JOD)</option>
-                    <option value="ILS">شيكل (₪)</option>
+                    <option value="SAR">{t("settings.sar")}</option>
+                    <option value="USD">{t("settings.usd")}</option>
+                    <option value="AED">{t("settings.aed")}</option>
+                    <option value="JOD">{t("settings.jod")}</option>
+                    <option value="ILS">{t("settings.ils")}</option>
                   </select>
                 </div>
               </div>
               <div>
-                <h3 className="mb-3 text-sm font-semibold text-white">المصاريف الثابتة الشهرية</h3>
-                <p className="mb-3 text-xs leading-6 text-muted">
-                  ملف المبيعات نادراً ما يحتوي الإيجار والرواتب والفواتير. أدخلها هنا ليُحسب صافي الربح الحقيقي لا ربح البضاعة فقط.
-                </p>
-                <label className="mb-4 flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-white/3 p-3">
+                <h3 className="mb-3 text-sm font-semibold text-foreground">{t("settings.opexTitle")}</h3>
+                <p className="mb-3 text-xs leading-6 text-muted">{t("settings.opexHint")}</p>
+                <label className="mb-4 flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-black/[0.03] p-3 dark:bg-white/3">
                   <input
                     type="checkbox"
-                    className="mt-1 h-4 w-4 accent-emerald-500"
+                    className="mt-1 h-4 w-4 accent-teal-400"
                     checked={Boolean(form.opexIncludedInFile)}
                     onChange={(e) => setForm({ ...form, opexIncludedInFile: e.target.checked, opexSetupCompleted: true })}
                   />
-                  <span className="text-sm leading-6 text-slate-200">
-                    لا توجد لدي مصاريف ثابتة / تم تضمينها داخل الملف
-                  </span>
+                  <span className="text-sm leading-6 text-foreground">{t("settings.noOpex")}</span>
                 </label>
                 <div className={form.opexIncludedInFile ? "pointer-events-none grid gap-4 opacity-40 md:grid-cols-2" : "grid gap-4 md:grid-cols-2"}>
                   <div>
-                    <Label>إيجار المقر / المستودع</Label>
+                    <Label>{t("settings.rent")}</Label>
                     <Input type="number" min={0} value={form.rent} onChange={(e) => setForm({ ...form, rent: Number(e.target.value) || 0 })} />
                   </div>
                   <div>
-                    <Label>رواتب الموظفين والعمالة</Label>
+                    <Label>{t("settings.salaries")}</Label>
                     <Input type="number" min={0} value={form.salaries} onChange={(e) => setForm({ ...form, salaries: Number(e.target.value) || 0 })} />
                   </div>
                   <div>
-                    <Label>الفواتير والخدمات (كهرباء، ماء، إنترنت)</Label>
+                    <Label>{t("settings.utilities")}</Label>
                     <Input type="number" min={0} value={form.utilities || 0} onChange={(e) => setForm({ ...form, utilities: Number(e.target.value) || 0 })} />
                   </div>
                   <div>
-                    <Label>تسويق أو اشتراكات ثابتة</Label>
+                    <Label>{t("settings.other")}</Label>
                     <Input type="number" min={0} value={form.otherOpex} onChange={(e) => setForm({ ...form, otherOpex: Number(e.target.value) || 0 })} />
                   </div>
                 </div>
               </div>
-              <Button onClick={save}>حفظ التغييرات</Button>
+              <Button onClick={save}>{t("settings.save")}</Button>
             </CardContent>
           </Card>
         )}
@@ -163,32 +157,30 @@ function SettingsPageInner() {
         {tab === "reports" && (
           <div className="space-y-4">
             <Card className="border-primary/30 bg-primary/8 p-5">
-              <p className="text-sm leading-7 text-slate-200">
-                التقرير الكامل يتضمن ترويسة المتجر، تفكيك المبيعات والتكلفة والمصاريف، مقارنة الأشهر، أعلى سعر بيع، المنتجات الرابحة والخاسرة، تسريب الربح، المخزون، و3 قرارات لليوم. حمّلي HTML أو احفظي PDF من نافذة الطباعة.
-              </p>
+              <p className="text-sm leading-7 text-muted">{t("settings.reportIntro")}</p>
               {reports[0] && (
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Button onClick={() => exportReport(reports[0].key, "html", "all")}>
                     <Download className="h-4 w-4" />
-                    تحميل التقرير الشامل HTML
+                    {t("settings.downloadAll")}
                   </Button>
                   <Button variant="outline" onClick={() => exportReport(reports[0].key, "pdf", "all")}>
                     <Printer className="h-4 w-4" />
-                    طباعة / حفظ PDF
+                    {t("settings.printPdf")}
                   </Button>
                 </div>
               )}
             </Card>
             <Card>
               <CardHeader>
-                <CardTitle>تقارير الأشهر للملف المفتوح</CardTitle>
+                <CardTitle>{t("settings.monthReports")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 {reports.length === 0 && (
-                  <p className="text-sm text-muted">لا توجد تقارير بعد. ارفع ملفاً من إدارة البيانات ثم عد إلى هنا.</p>
+                  <p className="text-sm text-muted">{t("settings.noReports")}</p>
                 )}
                 {reports.map((report) => (
-                  <div key={report.key} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-white/3 px-4 py-3">
+                  <div key={report.key} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-black/[0.03] px-4 py-3 dark:bg-white/3">
                     <div className="flex flex-wrap gap-2">
                       <Button size="sm" variant="outline" onClick={() => exportReport(report.key, "html")}>
                         <Download className="h-4 w-4" />
@@ -201,8 +193,10 @@ function SettingsPageInner() {
                     </div>
                     <div className="flex flex-1 items-center justify-end gap-3">
                       <div className="text-end">
-                        <p className="text-sm font-medium text-white">{report.title}</p>
-                        <p className="text-xs text-muted">صافي الربح: {formatMoney(report.profit, currency)} • تقرير تفصيلي كامل</p>
+                        <p className="text-sm font-medium text-foreground">{report.title}</p>
+                        <p className="text-xs text-muted">
+                          {t("settings.netProfit")}: {formatMoney(report.profit, currency)} • {t("settings.fullReport")}
+                        </p>
                       </div>
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-primary">
                         <FileText className="h-5 w-5" />
@@ -219,9 +213,14 @@ function SettingsPageInner() {
   );
 }
 
+function SettingsFallback() {
+  const { t } = useAppearance();
+  return <p className="p-6 text-sm text-muted">{t("settings.loading")}</p>;
+}
+
 export default function SettingsPage() {
   return (
-    <Suspense fallback={<p className="p-6 text-sm text-muted">جاري تحميل الإعدادات...</p>}>
+    <Suspense fallback={<SettingsFallback />}>
       <SettingsPageInner />
     </Suspense>
   );

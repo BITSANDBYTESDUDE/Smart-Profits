@@ -9,14 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/auth-context";
-import { useAnalysis } from "@/context/analysis-context";
-import { trackPlatform } from "@/lib/admin/track";
+import { useAppearance } from "@/context/appearance";
 import { toast } from "sonner";
 
 export default function RegisterPage() {
   const router = useRouter();
   const { register } = useAuth();
-  const { saveSettings, settings } = useAnalysis();
+  const { t } = useAppearance();
   const [accepted, setAccepted] = useState(false);
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -28,57 +27,55 @@ export default function RegisterPage() {
     const password = String(data.get("password") || "");
 
     if (!fullName || !storeName || !email || password.length < 6) {
-      toast.error("أكمل جميع الحقول. كلمة المرور 6 أحرف على الأقل.");
+      toast.error(t("auth.needFields"));
       return;
     }
     if (!accepted) {
-      toast.error("يجب الموافقة على الشروط والأحكام.");
+      toast.error(t("auth.needTerms"));
       return;
     }
 
     register({ fullName, storeName, email, password }).catch(() => undefined);
-    saveSettings({ ...settings, storeName, ownerName: fullName });
-    trackPlatform("register", storeName);
-    toast.success("تم إنشاء الحساب. مرحباً بك في SmartProfit.");
+    toast.success(t("auth.registered"));
     router.push("/dashboard");
   }
 
   return (
     <AuthShell>
-      <h1 className="mt-10 text-3xl font-bold text-white">ابدأ رحلة نموك</h1>
-      <p className="mt-2 text-sm text-muted">أنشئ حسابك الآن وتحكم في أرباحك بذكاء</p>
+      <h1 className="mt-8 text-3xl font-bold text-foreground">{t("auth.register.title")}</h1>
+      <p className="mt-2 text-sm text-muted">{t("auth.register.subtitle")}</p>
 
       <form className="mt-8 space-y-4" onSubmit={onSubmit}>
         <div>
-          <Label htmlFor="fullName">الاسم الكامل</Label>
+          <Label htmlFor="fullName">{t("auth.fullName")}</Label>
           <div className="relative">
             <User className="pointer-events-none absolute end-3 top-3.5 h-4 w-4 text-slate-500" />
-            <Input id="fullName" name="fullName" placeholder="أحمد محمد" className="pe-10" />
+            <Input id="fullName" name="fullName" placeholder={t("auth.placeholder.name")} className="pe-10" />
           </div>
         </div>
         <div>
-          <Label htmlFor="storeName">اسم المتجر</Label>
+          <Label htmlFor="storeName">{t("auth.storeName")}</Label>
           <div className="relative">
             <Store className="pointer-events-none absolute end-3 top-3.5 h-4 w-4 text-slate-500" />
-            <Input id="storeName" name="storeName" placeholder="متجري للتجارة" className="pe-10" />
+            <Input id="storeName" name="storeName" placeholder={t("auth.placeholder.store")} className="pe-10" />
           </div>
         </div>
         <div>
-          <Label htmlFor="email">البريد الإلكتروني</Label>
+          <Label htmlFor="email">{t("auth.email")}</Label>
           <div className="relative">
             <Mail className="pointer-events-none absolute end-3 top-3.5 h-4 w-4 text-slate-500" />
             <Input id="email" name="email" type="email" placeholder="example@gmail.com" className="pe-10" />
           </div>
         </div>
         <div>
-          <Label htmlFor="password">كلمة المرور</Label>
+          <Label htmlFor="password">{t("auth.password")}</Label>
           <div className="relative">
             <Lock className="pointer-events-none absolute end-3 top-3.5 h-4 w-4 text-slate-500" />
             <Input id="password" name="password" type="password" placeholder="••••••••" className="pe-10" />
           </div>
         </div>
 
-        <label className="flex items-start gap-2 text-sm text-slate-300">
+        <label className="flex items-start gap-2 text-sm text-muted">
           <input
             type="checkbox"
             className="mt-1 accent-accent"
@@ -86,25 +83,24 @@ export default function RegisterPage() {
             onChange={(e) => setAccepted(e.target.checked)}
           />
           <span>
-            أوافق على{" "}
-            <span className="text-accent">الشروط والأحكام</span> و{" "}
-            <span className="text-accent">سياسة الخصوصية</span>
+            {t("auth.accept")} <span className="text-accent">{t("auth.terms")}</span> {t("auth.and")}{" "}
+            <span className="text-accent">{t("auth.privacy")}</span>
           </span>
         </label>
 
         <Button type="submit" variant="accent" size="lg" className="w-full">
-          إنشاء حساب
+          {t("auth.create")}
         </Button>
       </form>
 
       <p className="mt-6 text-center text-sm text-muted">
-        لديك حساب بالفعل؟{" "}
+        {t("auth.hasAccount")}{" "}
         <Link href="/login" className="text-accent hover:underline">
-          تسجيل الدخول
+          {t("auth.login.title")}
         </Link>
         <span className="mx-2">·</span>
         <Link href="/forgot-password" className="text-accent hover:underline">
-          نسيت كلمة المرور؟
+          {t("auth.forgot")}
         </Link>
       </p>
     </AuthShell>

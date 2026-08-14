@@ -3,17 +3,25 @@
 import { Toaster } from "sonner";
 import { AdminAuthProvider } from "@/context/admin-auth";
 import { AnalysisProvider } from "@/context/analysis-context";
+import { AppearanceProvider, useAppearance } from "@/context/appearance";
 import { AuthProvider } from "@/context/auth-context";
+
+function ThemedToaster() {
+  const { theme, dir } = useAppearance();
+  return <Toaster theme={theme} position="top-center" richColors dir={dir} />;
+}
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <AuthProvider>
-      <AdminAuthProvider>
-        <AnalysisProvider>
-          {children}
-          <Toaster theme="dark" position="top-center" richColors dir="rtl" />
-        </AnalysisProvider>
-      </AdminAuthProvider>
-    </AuthProvider>
+    <AppearanceProvider>
+      <AuthProvider>
+        <AdminAuthProvider>
+          <AnalysisProvider>
+            {children}
+            <ThemedToaster />
+          </AnalysisProvider>
+        </AdminAuthProvider>
+      </AuthProvider>
+    </AppearanceProvider>
   );
 }

@@ -48,6 +48,7 @@ export interface TrackEvent {
   type: TrackEventType;
   at: number;
   label?: string;
+  email?: string;
 }
 
 export type AccountStatus = "active" | "inactive" | "churned";

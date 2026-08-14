@@ -8,11 +8,13 @@ import { AuthShell } from "@/components/auth/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useAppearance } from "@/context/appearance";
 import { useAuth } from "@/context/auth-context";
 import { toast } from "sonner";
 
 export default function ForgotPasswordPage() {
   const { findAccount, register } = useAuth();
+  const { t } = useAppearance();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [found, setFound] = useState(false);
@@ -23,14 +25,14 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     const value = email.trim().toLowerCase();
     if (!value || !value.includes("@")) {
-      toast.error("ضع البريد الإلكتروني المسجّل.");
+      toast.error(t("auth.forgot.needEmail"));
       return;
     }
 
     const account = findAccount(value);
     if (!account) {
       setFound(false);
-      toast.error("هذا البريد غير موجود في المنصة. أنشئ حساباً أولاً.");
+      toast.error(t("auth.forgot.notFound"));
       return;
     }
 
@@ -48,12 +50,12 @@ export default function ForgotPasswordPage() {
       });
       const payload = (await response.json()) as { error?: string; message?: string };
       if (!response.ok) {
-        toast.error(payload.error || "تعذر إرسال الرسالة.");
+        toast.error(payload.error || t("auth.forgot.sendFail"));
         return;
       }
-      toast.success(payload.message || "تم إرسال كلمة المرور إلى بريدك.");
+      toast.success(payload.message || t("auth.forgot.sent"));
     } catch {
-      toast.error("تعذر الاتصال بخدمة البريد. يمكنك تعيين كلمة مرور جديدة بالأسفل.");
+      toast.error(t("auth.forgot.mailFail"));
     } finally {
       setSending(false);
     }
@@ -63,28 +65,28 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     const account = findAccount(email);
     if (!account) {
-      toast.error("أعد إدخال البريد أولاً.");
+      toast.error(t("auth.forgot.reenter"));
       return;
     }
     if (newPassword.length < 6) {
-      toast.error("كلمة المرور الجديدة 6 أحرف على الأقل.");
+      toast.error(t("auth.forgot.short"));
       return;
     }
     await register({ ...account, password: newPassword });
-    toast.success("تم حفظ كلمة المرور الجديدة.");
+    toast.success(t("auth.forgot.saved"));
     router.push("/dashboard");
   }
 
   return (
     <AuthShell>
-      <h1 className="mt-10 text-3xl font-bold text-white">نسيت كلمة المرور</h1>
-      <p className="mt-2 text-sm text-muted">ضع البريد الإلكتروني. إذا كان مسجّلاً نرسل كلمة المرور إلى نفس الجيميل.</p>
+      <h1 className="mt-10 text-3xl font-bold text-foreground">{t("auth.forgot.title")}</h1>
+      <p className="mt-2 text-sm text-muted">{t("auth.forgot.subtitle")}</p>
 
       <form className="mt-8 space-y-4" onSubmit={onLookup}>
         <div>
-          <Label htmlFor="email">البريد الإلكتروني</Label>
+          <Label htmlFor="email">{t("auth.email")}</Label>
           <div className="relative">
-            <Mail className="pointer-events-none absolute end-3 top-3.5 h-4 w-4 text-slate-500" />
+            <Mail className="pointer-events-none absolute end-3 top-3.5 h-4 w-4 text-muted" />
             <Input
               id="email"
               name="email"
@@ -101,15 +103,15 @@ export default function ForgotPasswordPage() {
           </div>
         </div>
         <Button type="submit" variant="accent" size="lg" className="w-full" disabled={sending}>
-          {sending ? "جاري الإرسال..." : "إرسال كلمة المرور إلى البريد"}
+          {sending ? t("auth.forgot.sending") : t("auth.forgot.send")}
         </Button>
       </form>
 
       {found && (
         <form className="mt-8 space-y-4 rounded-2xl border border-border p-4" onSubmit={onReset}>
-          <p className="text-sm text-slate-300">البريد موجود. يمكنك أيضاً تعيين كلمة مرور جديدة من هنا:</p>
+          <p className="text-sm text-muted">{t("auth.forgot.found")}</p>
           <div>
-            <Label htmlFor="newPassword">كلمة المرور الجديدة</Label>
+            <Label htmlFor="newPassword">{t("auth.forgot.newPassword")}</Label>
             <Input
               id="newPassword"
               type="password"
@@ -119,15 +121,15 @@ export default function ForgotPasswordPage() {
             />
           </div>
           <Button type="submit" className="w-full">
-            حفظ كلمة المرور الجديدة
+            {t("auth.forgot.save")}
           </Button>
         </form>
       )}
 
       <p className="mt-6 text-center text-sm text-muted">
-        تذكرت كلمة المرور؟{" "}
+        {t("auth.forgot.remember")}{" "}
         <Link href="/login" className="text-accent hover:underline">
-          تسجيل الدخول
+          {t("auth.login.title")}
         </Link>
       </p>
     </AuthShell>

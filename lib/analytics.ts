@@ -1,4 +1,5 @@
 import { buildAdvisorReport } from "./advisor";
+import { isUnspecifiedProduct } from "./mapping";
 import { monthKey, monthLabel } from "./format";
 import { predictFuturePerformance } from "./forecast";
 import { monthlyOpexFromSettings } from "./opex";
@@ -17,7 +18,7 @@ import type {
   ProductPerformance,
 } from "./types";
 
-const SLICE_COLORS = ["#10B981", "#3B82F6", "#64748B", "#8B5CF6", "#F59E0B", "#EF4444"];
+const SLICE_COLORS = ["#4FD1C5", "#E8C56B", "#64748B", "#67E8F9", "#F59E0B", "#EF4444"];
 
 function startOfDay(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -250,7 +251,7 @@ export function computeProductHighlights(transactions: Transaction[]): ProductHi
   >();
 
   for (const tx of transactions) {
-    if (!tx.product || tx.revenue <= 0) continue;
+    if (!tx.product || tx.revenue <= 0 || isUnspecifiedProduct(tx.product)) continue;
     if (/شحن|تسويق|shipping|delivery/i.test(`${tx.product} ${tx.category}`)) continue;
     const current = map.get(tx.product) ?? { saleCount: 0, quantity: 0, revenue: 0, cogs: 0 };
     current.saleCount += 1;

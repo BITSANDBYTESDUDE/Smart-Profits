@@ -1,13 +1,18 @@
 import type { TrackEvent, TrackEventType } from "./config";
+import { EVENTS_KEY } from "@/lib/tenant";
 
-const KEY = "smartprofit-platform-events";
-
-export function trackPlatform(type: TrackEventType, label?: string) {
+export function trackPlatform(type: TrackEventType, label?: string, email?: string) {
   if (typeof window === "undefined") return;
   try {
+    const event: TrackEvent = { type, at: Date.now(), label, email: email?.toLowerCase() };
     const current = readPlatformEvents();
-    current.unshift({ type, at: Date.now(), label });
-    localStorage.setItem(KEY, JSON.stringify(current.slice(0, 400)));
+    current.unshift(event);
+    localStorage.setItem(EVENTS_KEY, JSON.stringify(current.slice(0, 400)));
+    void fetch("/api/track", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(event),
+    }).catch(() => undefined);
   } catch {
     // ignore quota
   }
@@ -16,7 +21,7 @@ export function trackPlatform(type: TrackEventType, label?: string) {
 export function readPlatformEvents(): TrackEvent[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(EVENTS_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as TrackEvent[];
     return Array.isArray(parsed) ? parsed : [];

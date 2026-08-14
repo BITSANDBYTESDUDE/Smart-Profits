@@ -7,81 +7,81 @@ import { AuthShell } from "@/components/auth/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useAppearance } from "@/context/appearance";
 import { useAuth } from "@/context/auth-context";
-import { trackPlatform } from "@/lib/admin/track";
 import { toast } from "sonner";
 
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
+  const { t } = useAppearance();
 
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const data = new FormData(e.currentTarget);
     const email = String(data.get("email") || "").trim();
     const password = String(data.get("password") || "");
 
     if (!email || !email.includes("@")) {
-      toast.error("ضع البريد الإلكتروني.");
+      toast.error(t("auth.needEmail"));
       return;
     }
     if (password.length < 6) {
-      toast.error("أدخل كلمة المرور (6 أحرف على الأقل).");
+      toast.error(t("auth.needPassword"));
       return;
     }
 
-    const ok = login(email, password);
+    const ok = await login(email, password);
     if (!ok) {
-      toast.error("البريد أو كلمة المرور غير صحيحة.");
+      toast.error(t("auth.badLogin"));
       return;
     }
 
-    trackPlatform("login", email);
-    toast.success("تم تسجيل الدخول.");
+    toast.success(t("auth.loggedIn"));
     router.push("/dashboard");
   }
 
   return (
     <AuthShell>
-      <h1 className="mt-10 text-3xl font-bold text-white">تسجيل الدخول</h1>
-      <p className="mt-2 text-sm text-muted">ادخل ببريدك وكلمة المرور للعودة إلى مستشار متجرك</p>
+      <h1 className="mt-8 text-3xl font-bold text-foreground">{t("auth.login.title")}</h1>
+      <p className="mt-2 text-sm text-muted">{t("auth.login.subtitle")}</p>
 
       <form className="mt-8 space-y-4" onSubmit={onSubmit}>
         <div>
-          <Label htmlFor="email">البريد الإلكتروني</Label>
+          <Label htmlFor="email">{t("auth.email")}</Label>
           <div className="relative">
-            <Mail className="pointer-events-none absolute end-3 top-3.5 h-4 w-4 text-slate-500" />
+            <Mail className="pointer-events-none absolute end-3 top-3.5 h-4 w-4 text-muted" />
             <Input id="email" name="email" type="email" placeholder="example@gmail.com" className="pe-10" required />
           </div>
         </div>
         <div>
           <div className="mb-1.5 flex items-center justify-between">
             <Label htmlFor="password" className="mb-0">
-              كلمة المرور
+              {t("auth.password")}
             </Label>
             <Link href="/forgot-password" className="text-xs text-accent hover:underline">
-              نسيت كلمة المرور؟
+              {t("auth.forgot")}
             </Link>
           </div>
           <div className="relative">
-            <Lock className="pointer-events-none absolute end-3 top-3.5 h-4 w-4 text-slate-500" />
+            <Lock className="pointer-events-none absolute end-3 top-3.5 h-4 w-4 text-muted" />
             <Input id="password" name="password" type="password" placeholder="••••••••" className="pe-10" required />
           </div>
         </div>
         <Button type="submit" variant="accent" size="lg" className="w-full">
-          دخول
+          {t("auth.enter")}
         </Button>
       </form>
 
       <p className="mt-6 text-center text-sm text-muted">
-        ليس لديك حساب؟{" "}
+        {t("auth.noAccount")}{" "}
         <Link href="/register" className="text-accent hover:underline">
-          إنشاء حساب
+          {t("auth.create")}
         </Link>
       </p>
-      <p className="mt-4 text-center text-xs text-slate-500">
+      <p className="mt-4 text-center text-xs text-muted">
         <Link href="/admin/login" className="hover:text-accent">
-          دخول لوحة الإدارة (Super Admin)
+          {t("auth.adminLink")}
         </Link>
       </p>
     </AuthShell>

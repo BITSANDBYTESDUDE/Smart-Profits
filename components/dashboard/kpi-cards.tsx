@@ -23,7 +23,7 @@ export function HealthRing({ score, label }: { score: number; label: string }) {
   const radius = 36;
   const circ = 2 * Math.PI * radius;
   const offset = circ - (score / 100) * circ;
-  const stroke = score >= 75 ? "#10b981" : score >= 50 ? "#f59e0b" : "#ef4444";
+  const stroke = score >= 75 ? "#4fd1c5" : score >= 50 ? "#e8c56b" : "#ef4444";
 
   return (
     <div className="relative h-24 w-24">
@@ -42,7 +42,7 @@ export function HealthRing({ score, label }: { score: number; label: string }) {
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-xl font-bold text-white">{score}</span>
+        <span className="text-xl font-bold text-foreground">{score}</span>
         <span className="text-[10px] text-accent">{label}</span>
       </div>
     </div>
@@ -88,7 +88,7 @@ export function KpiCards() {
         <Card className="flex items-center justify-between p-5">
           <div>
             <p className="text-sm text-muted">مؤشر صحة المتجر</p>
-            <p className="mt-2 text-3xl font-bold text-white">{kpis.healthScore}</p>
+            <p className="mt-2 text-3xl font-bold text-foreground">{kpis.healthScore}</p>
             <p className="mt-1 text-sm text-accent">{kpis.healthLabel}</p>
           </div>
           <HealthRing score={kpis.healthScore} label={kpis.healthLabel} />
@@ -105,12 +105,12 @@ export function KpiCards() {
                     <Icon className="h-4 w-4" />
                   </div>
                 </div>
-                <p className="mt-3 text-2xl font-bold text-white">{item.value}</p>
+                <p className="mt-3 text-2xl font-bold text-foreground">{item.value}</p>
                 <div className="mt-3 flex items-center justify-between text-xs text-muted">
                   <span>{item.hint}</span>
                   <Trend value={item.trend} />
                 </div>
-                <Shield className="pointer-events-none absolute -end-4 -bottom-4 h-20 w-20 text-white/3" />
+                <Shield className="pointer-events-none absolute -end-4 -bottom-4 h-20 w-20 text-foreground/3" />
               </Card>
             </button>
           );
@@ -121,7 +121,7 @@ export function KpiCards() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setOpen(null)}>
           <Card className="w-full max-w-md p-5" onClick={(event) => event.stopPropagation()}>
             <div className="mb-3 flex items-center justify-between">
-              <p className="font-semibold text-white">كيف وصلنا لهذا الرقم؟</p>
+              <p className="font-semibold text-foreground">كيف وصلنا لهذا الرقم؟</p>
               <Button size="icon" variant="ghost" onClick={() => setOpen(null)}>
                 <X />
               </Button>

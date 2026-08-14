@@ -1,20 +1,22 @@
 "use client";
 
-import { Shield } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { Logo } from "@/components/brand/logo";
+import { AppearanceToggles } from "@/components/layout/appearance-toggles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAdminAuth } from "@/context/admin-auth";
+import { useAppearance } from "@/context/appearance";
 import { DEFAULT_ADMIN } from "@/lib/admin/config";
 
 export default function AdminLoginPage() {
   const router = useRouter();
   const { admin, ready, login } = useAdminAuth();
+  const { t } = useAppearance();
 
   useEffect(() => {
     if (ready && admin) router.replace("/admin");
@@ -26,10 +28,10 @@ export default function AdminLoginPage() {
     const email = String(data.get("email") || "").trim();
     const password = String(data.get("password") || "");
     if (!login(email, password)) {
-      toast.error("بيانات مديرة المشروع غير صحيحة.");
+      toast.error(t("admin.badLogin"));
       return;
     }
-    toast.success("مرحباً بك في لوحة Super Admin.");
+    toast.success(t("admin.welcome"));
     router.push("/admin");
   }
 
@@ -37,15 +39,16 @@ export default function AdminLoginPage() {
     <div className="flex min-h-screen bg-background">
       <section className="flex w-full flex-col justify-center px-6 py-10 lg:w-1/2 lg:px-16">
         <div className="mx-auto w-full max-w-md">
-          <Logo tagline="Internal Admin Dashboard" />
-          <h1 className="mt-10 text-3xl font-bold text-white">دخول الإدارة</h1>
-          <p className="mt-2 text-sm leading-7 text-muted">
-            Super Admin Portal — مراقبة الدخل، المصاريف، التسجيلات، الاستمرارية، والزوار لمنصة Smart Profits.
-          </p>
+          <div className="mb-6 flex flex-col gap-4">
+            <Logo size="lg" tagline={t("admin.tagline.login")} />
+            <AppearanceToggles />
+          </div>
+          <h1 className="mt-4 text-3xl font-bold text-foreground">{t("admin.login.title")}</h1>
+          <p className="mt-2 text-sm leading-7 text-muted">{t("admin.login.subtitle")}</p>
 
           <form className="mt-8 space-y-4" onSubmit={onSubmit}>
             <div>
-              <Label htmlFor="email">بريد مديرة المشروع</Label>
+              <Label htmlFor="email">{t("admin.login.email")}</Label>
               <Input
                 id="email"
                 name="email"
@@ -56,7 +59,7 @@ export default function AdminLoginPage() {
               />
             </div>
             <div>
-              <Label htmlFor="password">كلمة المرور</Label>
+              <Label htmlFor="password">{t("admin.login.password")}</Label>
               <Input
                 id="password"
                 name="password"
@@ -67,30 +70,28 @@ export default function AdminLoginPage() {
               />
             </div>
             <Button type="submit" variant="accent" size="lg" className="w-full">
-              دخول لوحة التحكم
+              {t("admin.login.submit")}
             </Button>
           </form>
 
           <p className="mt-6 text-center text-sm text-muted">
-            تاجر؟{" "}
+            {t("admin.login.merchant")}{" "}
             <Link href="/login" className="text-accent hover:underline">
-              تسجيل دخول المتجر
+              {t("admin.login.merchantLink")}
             </Link>
           </p>
         </div>
       </section>
 
-      <div className="relative hidden min-h-screen overflow-hidden bg-[#07111f] lg:flex lg:w-1/2 lg:items-center lg:justify-center">
+      <div className="relative hidden min-h-screen overflow-hidden bg-background lg:flex lg:w-1/2 lg:items-center lg:justify-center">
         <div className="bg-grid-fade absolute inset-0 opacity-40" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0f172a] via-transparent to-emerald-500/10" />
-        <div className="relative z-10 mx-10 max-w-md rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur-md">
-          <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/20 text-accent">
-            <Shield className="h-6 w-6" />
-          </div>
-          <h2 className="text-2xl font-bold leading-10 text-white">العقل المدبر للمنصة</h2>
-          <p className="mt-3 text-sm leading-7 text-slate-300">
-            أربع صفحات فقط: نظرة عامة، الخزينة، المستخدمون والاستمرارية، وحركة المرور واستخدام الميزات.
-          </p>
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-primary/10" />
+        <div className="absolute start-16 top-24 h-40 w-40 rounded-full bg-primary/25 blur-3xl" />
+        <div className="absolute end-10 bottom-20 h-52 w-52 rounded-full bg-accent/20 blur-3xl" />
+        <div className="relative z-10 mx-10 max-w-md rounded-3xl border border-primary/20 bg-background/70 p-8 shadow-2xl backdrop-blur-md">
+          <Logo size="lg" tagline={t("admin.tagline.login")} />
+          <h2 className="mt-6 text-2xl font-bold leading-10 text-foreground">{t("admin.brain")}</h2>
+          <p className="mt-3 text-sm leading-7 text-muted">{t("admin.brain.body")}</p>
         </div>
       </div>
     </div>

@@ -11,28 +11,29 @@ import { AppHeader } from "@/components/layout/app-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAnalysis } from "@/context/analysis-context";
+import { useAppearance } from "@/context/appearance";
+import { useAuth } from "@/context/auth-context";
 import { formatMoney } from "@/lib/format";
 import { trackPlatform } from "@/lib/admin/track";
 
 export default function SimulatorPage() {
   const { result, currency } = useAnalysis();
+  const { user } = useAuth();
+  const { t } = useAppearance();
 
   useEffect(() => {
-    trackPlatform("whatif");
-  }, []);
+    trackPlatform("whatif", undefined, user?.email);
+  }, [user?.email]);
 
   return (
     <>
-      <AppHeader
-        title="محاكي القرارات والتوقعات"
-        subtitle="جرّب السعر أو الخصم، ثم شاهد أسوأ / المتوقع / أفضل حالة للأشهر القادمة"
-      />
+      <AppHeader title={t("sim.title")} subtitle={t("sim.subtitle")} />
       <div className="space-y-5 p-6">
         {!result && (
           <Card className="p-8 text-center">
-            <p className="text-white">المحاكاة والتوقع يحتاجان ملفاً مفتوحاً.</p>
+            <p className="text-foreground">{t("sim.needFile")}</p>
             <Link href="/data">
-              <Button className="mt-4">رفع ملف</Button>
+              <Button className="mt-4">{t("sim.upload")}</Button>
             </Link>
           </Card>
         )}
@@ -42,7 +43,7 @@ export default function SimulatorPage() {
             <WhatIfSimulator />
             {result.forecast.willLoseNextMonth != null && (
               <p className="text-sm text-muted">
-                الربح المتوقع للشهر القادم:{" "}
+                {t("sim.nextProfit")}:{" "}
                 <span className={result.forecast.willLoseNextMonth ? "text-danger" : "text-accent"}>
                   {formatMoney(result.forecast.nextMonthProfit, currency)}
                 </span>

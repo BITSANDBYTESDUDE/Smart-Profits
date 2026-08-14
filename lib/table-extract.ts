@@ -1,4 +1,4 @@
-import { detectColumns, findHeaderTokens, mappedRoleCount, stripKnownHeaders } from "./mapping";
+import { detectColumns, findHeaderTokens, isUnspecifiedProduct, mappedRoleCount, stripKnownHeaders } from "./mapping";
 
 export interface PositionedItem {
   str: string;
@@ -281,7 +281,7 @@ function distinctProductCount(rows: Record<string, unknown>[] | null) {
   return new Set(
     rows
       .map((row) => String(row[key] ?? "").replace(/\s+/g, " ").trim())
-      .filter((name) => name && name !== "غير محدد"),
+      .filter((name) => name && !isUnspecifiedProduct(name)),
   ).size;
 }
 

@@ -107,3 +107,11 @@ export const SAMPLE_CSV_TEMPLATE = `التاريخ,اسم المنتج,الكم�
 2023-10-03,كيبورد ميكانيكي,3,240,140,إلكترونيات استهلاكية,,
 2023-10-28,شحن وتوصيل,1,0,0,شحن,8500,شحن
 `;
+
+export const SAMPLE_CSV_TEMPLATE_EN = `Date,Product,Quantity,Selling Price,Cost Price,Category,Expense,Expense Type
+2023-10-01,Wireless Headphones,12,375,180,Electronics,,
+2023-10-01,Smart Watch,8,520,260,Electronics,,
+2023-10-02,Fast Charger,20,85,32,Accessories,,
+2023-10-03,Mechanical Keyboard,3,240,140,Electronics,,
+2023-10-28,Shipping & Delivery,1,0,0,Shipping,8500,Shipping
+`;

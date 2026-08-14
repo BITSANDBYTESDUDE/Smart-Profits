@@ -46,7 +46,7 @@ export function RevenueExpenseChart() {
               contentStyle={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 12 }}
               formatter={(value) => formatMoney(currency === "USD" ? Number(value) * 3.75 : Number(value), currency)}
             />
-            <Line type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={3} dot={false} />
+            <Line type="monotone" dataKey="revenue" stroke="#4fd1c5" strokeWidth={3} dot={false} />
             <Line type="monotone" dataKey="expenses" stroke="#94a3b8" strokeWidth={2} strokeDasharray="6 6" dot={false} />
           </LineChart>
         </ResponsiveContainer>

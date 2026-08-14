@@ -30,7 +30,7 @@ export function TodayActions() {
         <p className="text-sm text-muted">ثلاث قرارات فقط — ليس عشرين رسماً.</p>
         {actions.map((action, index) => (
           <div key={action.id} className={cn("rounded-xl border p-4", PRIORITY[action.priority])}>
-            <p className="text-sm font-semibold text-white">
+            <p className="text-sm font-semibold text-foreground">
               {index + 1}. {action.title}
             </p>
             <p className="mt-2 text-sm leading-6 text-slate-300">{action.reason}</p>

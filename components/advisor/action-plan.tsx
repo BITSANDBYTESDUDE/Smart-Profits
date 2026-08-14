@@ -19,7 +19,7 @@ export function ActionPlan() {
       <CardContent className="grid gap-3 md:grid-cols-2">
         {result.advisor.plan.map((week) => (
           <div key={week.week} className="rounded-xl border border-border p-4">
-            <p className="text-sm font-semibold text-white">
+            <p className="text-sm font-semibold text-foreground">
               الأسبوع {week.week} — {week.title}
             </p>
             <ul className="mt-2 space-y-1 text-sm text-slate-300">

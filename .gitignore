@@ -34,8 +34,10 @@ yarn-error.log*
 .env*
 !.env.example
 
-# local user store (passwords)
+# local user store (passwords + per-account workspaces)
 /data/users.json
+/data/workspaces/
+/data/events.json
 
 
 # vercel

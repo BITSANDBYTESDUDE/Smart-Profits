@@ -1,182 +1,217 @@
-import { countEvents, readPlatformEvents } from "./track";
+import { countRealFiles, PLAN_PRICE_USD, readAllLocalWorkspaces, USERS_KEY } from "@/lib/tenant";
 import type { DateRangeKey } from "./config";
 import { rangeBounds } from "./config";
+import type { TrackEvent } from "./config";
 import type { AdminSnapshot, AdminUserRow } from "./types";
+import type { AccountStatus, PlanTier } from "./config";
+import type { PersistedWorkspace } from "@/lib/serialize";
 
-function mulberry(seed: number) {
-  return function next() {
-    let t = (seed += 0x6d2b79f5);
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
+export interface AdminFacts {
+  users: Array<{
+    fullName: string;
+    storeName: string;
+    email: string;
+    createdAt?: string;
+    lastActive?: string;
+    plan?: PlanTier;
+    status?: AccountStatus;
+  }>;
+  events: TrackEvent[];
+  workspaces: Array<{ email: string; workspace: PersistedWorkspace }>;
 }
 
 function daysBetween(start: Date, end: Date) {
   return Math.max(1, Math.round((end.getTime() - start.getTime()) / 86400000) + 1);
 }
 
-const DEMO_STORES = [
-  ["نور العتيبي", "بيت النور"],
-  ["خالد منصور", "متجر خالد للإلكترونيات"],
-  ["سارة أحمد", "سارة بيوتي"],
-  ["عمر الشريف", "بيت التاجر"],
-  ["ليان حسن", "ليان هوم"],
-  ["فهد الدوسري", "فهد ستور"],
-  ["ميساء علي", "ميساء فاشن"],
-  ["يوسف حمدي", "يوسف تك"],
-  ["هدى سالم", "هدية"],
-  ["بدر العلي", "بدر ماركت"],
-];
-
-function countWorkspaceFiles() {
-  if (typeof window === "undefined") return 0;
-  try {
-    const raw = localStorage.getItem("smartprofit-workspace-v2");
-    if (!raw) return 0;
-    const parsed = JSON.parse(raw) as { files?: { isDemo?: boolean }[] };
-    return (parsed.files ?? []).filter((file) => !file.isDemo).length;
-  } catch {
-    return 0;
-  }
+function inRange(iso: string | undefined, start: Date, end: Date) {
+  if (!iso) return false;
+  const t = new Date(iso).getTime();
+  return t >= start.getTime() && t <= end.getTime();
 }
 
-function readMerchantUsers(): AdminUserRow[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem("smartprofit-users");
-    if (!raw) return [];
-    const filesUploaded = Math.max(1, countWorkspaceFiles());
-    const parsed = JSON.parse(raw) as Array<{ fullName: string; storeName: string; email: string }>;
-    return parsed.map((user, index) => ({
-      id: `real-${user.email}`,
-      name: user.fullName,
-      store: user.storeName,
-      email: user.email,
-      registeredAt: new Date(Date.now() - (index + 1) * 86400000).toISOString(),
-      status: "active" as const,
-      plan: "pro" as const,
-      filesUploaded,
-      lastActive: new Date().toISOString(),
-      real: true,
-    }));
-  } catch {
-    return [];
+function bucketLabels(range: DateRangeKey, start: Date, days: number) {
+  if (range === "year") {
+    return ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"].slice(
+      0,
+      Math.min(12, new Date().getMonth() + 1),
+    );
   }
+  if (range === "today") {
+    return Array.from({ length: 8 }, (_, i) => `${8 + i}:00`);
+  }
+  const count = Math.min(days, range === "week" ? 7 : 10);
+  return Array.from({ length: count }, (_, i) => {
+    const d = new Date(start);
+    d.setDate(start.getDate() + Math.floor((i * days) / count));
+    return d.toLocaleDateString("ar-SA", { day: "numeric", month: "short" });
+  });
 }
 
-function readOverrides(): Record<string, Partial<AdminUserRow>> {
-  if (typeof window === "undefined") return {};
+function bucketIndex(at: number, start: Date, end: Date, buckets: number) {
+  const span = Math.max(1, end.getTime() - start.getTime());
+  const idx = Math.floor(((at - start.getTime()) / span) * buckets);
+  return Math.min(buckets - 1, Math.max(0, idx));
+}
+
+export function collectClientFacts(): AdminFacts {
+  if (typeof window === "undefined") return { users: [], events: [], workspaces: [] };
+  let users: AdminFacts["users"] = [];
   try {
-    return JSON.parse(localStorage.getItem("smartprofit-admin-user-overrides") ?? "{}") as Record<
-      string,
-      Partial<AdminUserRow>
-    >;
+    const raw = localStorage.getItem(USERS_KEY);
+    users = raw ? (JSON.parse(raw) as AdminFacts["users"]) : [];
   } catch {
-    return {};
+    users = [];
   }
+  let events: TrackEvent[] = [];
+  try {
+    const raw = localStorage.getItem("smartprofit-platform-events");
+    events = raw ? (JSON.parse(raw) as TrackEvent[]) : [];
+  } catch {
+    events = [];
+  }
+  return { users, events, workspaces: readAllLocalWorkspaces() };
+}
+
+export function mergeFacts(base: AdminFacts, extra: AdminFacts): AdminFacts {
+  const users = new Map<string, AdminFacts["users"][number]>();
+  for (const user of [...base.users, ...extra.users]) {
+    const email = user.email.trim().toLowerCase();
+    const prev = users.get(email);
+    users.set(email, prev ? { ...prev, ...user, email } : { ...user, email });
+  }
+  const workspaces = new Map<string, PersistedWorkspace>();
+  for (const row of [...base.workspaces, ...extra.workspaces]) {
+    workspaces.set(row.email.trim().toLowerCase(), row.workspace);
+  }
+  const seen = new Set<string>();
+  const events: TrackEvent[] = [];
+  for (const event of [...base.events, ...extra.events]) {
+    const key = `${event.at}|${event.type}|${event.label ?? ""}|${event.email ?? ""}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    events.push(event);
+  }
+  events.sort((a, b) => b.at - a.at);
+  return {
+    users: Array.from(users.values()),
+    events,
+    workspaces: Array.from(workspaces.entries()).map(([email, workspace]) => ({ email, workspace })),
+  };
 }
 
 export function saveUserOverride(id: string, patch: Partial<AdminUserRow>) {
-  const current = readOverrides();
-  current[id] = { ...current[id], ...patch };
-  localStorage.setItem("smartprofit-admin-user-overrides", JSON.stringify(current));
+  if (typeof window === "undefined") return;
+  const email = id.replace(/^real-/, "");
+  try {
+    const raw = localStorage.getItem(USERS_KEY);
+    const users = raw ? (JSON.parse(raw) as AdminFacts["users"]) : [];
+    const index = users.findIndex((item) => item.email.toLowerCase() === email.toLowerCase());
+    if (index >= 0) {
+      users[index] = {
+        ...users[index],
+        plan: patch.plan ?? users[index].plan,
+        status: patch.status ?? users[index].status,
+      };
+      localStorage.setItem(USERS_KEY, JSON.stringify(users));
+    }
+  } catch {
+    // ignore
+  }
 }
 
-export function buildAdminSnapshot(range: DateRangeKey, from?: string, to?: string): AdminSnapshot {
+export function buildAdminSnapshotFromFacts(
+  facts: AdminFacts,
+  range: DateRangeKey,
+  from?: string,
+  to?: string,
+): AdminSnapshot {
   const { start, end } = rangeBounds(range, from, to);
+  const prevEnd = new Date(start.getTime() - 1);
+  const prevStart = new Date(prevEnd.getTime() - (end.getTime() - start.getTime()));
   const days = daysBetween(start, end);
-  const rand = mulberry(start.getFullYear() * 1000 + start.getMonth() * 40 + days);
-  const scale = Math.max(1, days / 30);
+  const filesByEmail = new Map(facts.workspaces.map((row) => [row.email, countRealFiles(row.workspace)]));
 
-  const visitors = Math.round(420 * days * (0.85 + rand() * 0.4));
-  const visitorsChange = Math.round((rand() * 28 - 6) * 10) / 10;
-  const activeUsers = Math.max(8, Math.round(38 * scale + rand() * 12));
-  const mrr = Math.round(1860 + 420 * Math.min(scale, 4) + rand() * 200);
-  const ai = Math.round(180 * scale + 40);
-  const hosting = Math.round(90 * scale + 25);
-  const payments = Math.round(mrr * 0.029 + 12);
-  const marketing = Math.round(140 * scale + 30);
-  const outflowTotal = ai + hosting + payments + marketing;
-  const subscriptions = Math.round(mrr * Math.min(1, days / 30));
-  const addons = Math.round(120 * scale);
-  const inflowTotal = subscriptions + addons;
+  const users: AdminUserRow[] = facts.users
+    .filter((user) => user.email)
+    .map((user) => {
+      const lastActive = user.lastActive || user.createdAt || new Date().toISOString();
+      const ageDays = (Date.now() - new Date(lastActive).getTime()) / 86400000;
+      const status: AccountStatus = user.status ?? (ageDays <= 30 ? "active" : "inactive");
+      return {
+        id: `real-${user.email.toLowerCase()}`,
+        name: user.fullName || "تاجر",
+        store: user.storeName || "—",
+        email: user.email.toLowerCase(),
+        registeredAt: user.createdAt || lastActive,
+        status,
+        plan: user.plan ?? "free",
+        filesUploaded: filesByEmail.get(user.email.toLowerCase()) ?? 0,
+        lastActive,
+        real: true,
+      };
+    })
+    .sort((a, b) => new Date(b.registeredAt).getTime() - new Date(a.registeredAt).getTime());
+
+  const rangeEvents = facts.events.filter((event) => event.at >= start.getTime() && event.at <= end.getTime());
+  const prevEvents = facts.events.filter((event) => event.at >= prevStart.getTime() && event.at <= prevEnd.getTime());
+
+  const uniqueNow = new Set(rangeEvents.map((event) => event.email || event.label).filter(Boolean)).size;
+  const uniquePrev = new Set(prevEvents.map((event) => event.email || event.label).filter(Boolean)).size;
+  const visitors = uniqueNow || users.filter((user) => inRange(user.lastActive, start, end)).length;
+  const visitorsChange =
+    uniquePrev === 0 ? (visitors > 0 ? 100 : 0) : Math.round(((visitors - uniquePrev) / uniquePrev) * 1000) / 10;
+
+  const activeUsers = users.filter((user) => user.status === "active" && inRange(user.lastActive, start, end)).length
+    || users.filter((user) => user.status === "active").length;
+  const mrr = users
+    .filter((user) => user.status === "active")
+    .reduce((sum, user) => sum + PLAN_PRICE_USD[user.plan], 0);
+  const inflowTotal = mrr;
+  const outflowTotal = 0;
   const netProfit = inflowTotal - outflowTotal;
 
-  const points = Math.min(days, range === "year" ? 12 : range === "today" ? 8 : 10);
-  const revenueSeries = Array.from({ length: points }, (_, index) => {
-    const name =
-      range === "year"
-        ? ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"][index] ?? `${index + 1}`
-        : range === "today"
-          ? `${8 + index}:00`
-          : `ي${index + 1}`;
+  const labels = bucketLabels(range, start, days);
+  const revenueSeries = labels.map((name, index) => {
+    const paidInBucket = users.filter((user) => {
+      const t = new Date(user.registeredAt).getTime();
+      return bucketIndex(t, start, end, labels.length) === index && user.plan !== "free";
+    });
     return {
       name,
-      revenue: Math.round((inflowTotal / points) * (0.7 + rand() * 0.7)),
-      expenses: Math.round((outflowTotal / points) * (0.7 + rand() * 0.6)),
+      revenue: paidInBucket.reduce((sum, user) => sum + PLAN_PRICE_USD[user.plan], 0),
+      expenses: 0,
     };
   });
 
-  const userGrowth = revenueSeries.map((point, index) => ({
-    name: point.name,
-    users: Math.max(1, Math.round((2 + rand() * 6) * (index + 1) * 0.35)),
-  }));
-
-  const tracked = readPlatformEvents().filter((event) => event.at >= start.getTime() && event.at <= end.getTime());
-  const activity = [
-    ...tracked.slice(0, 6).map((event, index) => ({
-      id: `t-${event.at}-${index}`,
-      icon: event.type === "analyze" || event.type === "doctor" || event.type === "whatif" ? ("analyze" as const) : event.type === "register" ? ("user" as const) : ("pay" as const),
-      text:
-        event.type === "analyze"
-          ? `تاجر أجرى تحليل Excel${event.label ? ` (${event.label})` : ""}`
-          : event.type === "register"
-            ? "مستخدم جديد سجّل حسابه"
-            : event.type === "doctor"
-              ? "تاجر فتح تشخيص طبيب المتجر"
-              : event.type === "whatif"
-                ? "محاكاة قرار What-If"
-                : event.type === "upload_error"
-                  ? "فشل رفع/تنظيف ملف Excel"
-                  : "نشاط على المنصة",
-      time: new Date(event.at).toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" }),
-    })),
-    {
-      id: "seed-1",
-      icon: "analyze" as const,
-      text: "تاجر أجرى تحليل Excel منذ 3 دقائق",
-      time: "الآن",
-    },
-    {
-      id: "seed-2",
-      icon: "pay" as const,
-      text: "اشتراك جديد في الباقة الاحترافية — $49",
-      time: "قبل 12 د",
-    },
-    {
-      id: "seed-3",
-      icon: "user" as const,
-      text: "مستخدم جديد سجّل حسابه",
-      time: "قبل 28 د",
-    },
-  ].slice(0, 8);
-
-  const demoUsers: AdminUserRow[] = DEMO_STORES.map(([name, store], index) => ({
-    id: `demo-${index}`,
+  const userGrowth = labels.map((name, index) => ({
     name,
-    store,
-    email: `${name.split(" ")[0].toLowerCase()}@shop.sa`,
-    registeredAt: new Date(Date.now() - (index + 3) * 86400000 * 4).toISOString(),
-    status: index % 7 === 0 ? "churned" : index % 5 === 0 ? "inactive" : "active",
-    plan: index % 4 === 0 ? "business" : index % 3 === 0 ? "free" : "pro",
-    filesUploaded: 1 + Math.round(rand() * 14),
-    lastActive: new Date(Date.now() - index * 3600000 * 6).toISOString(),
-    real: false,
+    users: users.filter((user) => {
+      const t = new Date(user.registeredAt).getTime();
+      return t <= start.getTime() + ((index + 1) / labels.length) * (end.getTime() - start.getTime());
+    }).length,
   }));
 
-  const overrides = readOverrides();
-  const users = [...readMerchantUsers(), ...demoUsers].map((user) => ({ ...user, ...overrides[user.id] }));
+  const storeByEmail = new Map(users.map((user) => [user.email, user.store]));
+  const activity = rangeEvents.slice(0, 12).map((event, index) => ({
+    id: `t-${event.at}-${index}`,
+    icon: event.type === "analyze" || event.type === "doctor" || event.type === "whatif" ? ("analyze" as const) : event.type === "register" ? ("user" as const) : ("pay" as const),
+    text:
+      event.type === "analyze"
+        ? `${storeByEmail.get(event.email || "") || event.email || "تاجر"} حلّل ملفاً${event.label ? ` (${event.label})` : ""}`
+        : event.type === "register"
+          ? `حساب جديد: ${event.label || event.email || "تاجر"}`
+          : event.type === "login"
+            ? `دخول: ${storeByEmail.get(event.email || "") || event.email || "تاجر"}`
+            : event.type === "doctor"
+              ? `${storeByEmail.get(event.email || "") || "تاجر"} فتح التشخيص`
+              : event.type === "whatif"
+                ? `${storeByEmail.get(event.email || "") || "تاجر"} شغّل المحاكاة`
+                : event.type === "upload_error"
+                  ? `فشل رفع ملف${event.label ? ` (${event.label})` : ""}`
+                  : "نشاط على المنصة",
+    time: new Date(event.at).toLocaleString("ar-SA", { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" }),
+  }));
 
   const free = users.filter((user) => user.plan === "free").length;
   const pro = users.filter((user) => user.plan === "pro").length;
@@ -185,30 +220,43 @@ export function buildAdminSnapshot(range: DateRangeKey, from?: string, to?: stri
   const activeCount = users.filter((user) => user.status === "active").length;
   const churned = users.filter((user) => user.status === "churned").length;
 
-  const transactions = users.slice(0, 10).map((user, index) => ({
-    invoice: `INV-2026-${String(1040 + index).padStart(4, "0")}`,
-    merchant: user.store,
-    amount: user.plan === "business" ? 99 : user.plan === "pro" ? 49 : 0,
-    status: index % 8 === 0 ? ("failed" as const) : index % 11 === 0 ? ("refunded" as const) : ("success" as const),
-    date: new Date(Date.now() - index * 86400000 * 2).toISOString(),
-    plan: user.plan === "business" ? "Business" : user.plan === "pro" ? "Pro" : "Free",
-  }));
+  const transactions = users
+    .filter((user) => user.plan !== "free")
+    .map((user, index) => ({
+      invoice: `SUB-${user.email.slice(0, 6).toUpperCase()}-${index + 1}`,
+      merchant: user.store,
+      amount: PLAN_PRICE_USD[user.plan],
+      status: "success" as const,
+      date: user.registeredAt,
+      plan: user.plan === "business" ? "Business" : "Pro",
+    }));
 
-  const doctor = 86 * scale + countEvents("doctor", start, end);
-  const whatif = 54 * scale + countEvents("whatif", start, end);
-  const leak = 71 * scale + countEvents("leak", start, end);
-  const uploadErrors = Math.round(4 * scale) + countEvents("upload_error", start, end);
+  const analyze = rangeEvents.filter((e) => e.type === "analyze").length;
+  const doctor = rangeEvents.filter((e) => e.type === "doctor").length;
+  const whatif = rangeEvents.filter((e) => e.type === "whatif").length;
+  const leak = rangeEvents.filter((e) => e.type === "leak").length;
+  const uploadErrors = rangeEvents.filter((e) => e.type === "upload_error").length;
+  const logins = rangeEvents.filter((e) => e.type === "login").length;
+  const registers = rangeEvents.filter((e) => e.type === "register").length;
 
-  const uniqueVisitors = Math.round(visitors * 0.62);
-  const pageViews = Math.round(visitors * 2.4);
-  const conversion = Math.round((activeUsers / Math.max(1, uniqueVisitors)) * 1000) / 10;
+  const uniqueVisitors = visitors;
+  const pageViews = rangeEvents.length;
+  const conversion = Math.round((registers / Math.max(1, uniqueVisitors)) * 1000) / 10;
 
+  const totalFeature = Math.max(1, analyze + doctor + whatif + logins);
+  const sources = [
+    { name: "تحليل ملفات", value: Math.round((analyze / totalFeature) * 100), color: "#4FD1C5" },
+    { name: "تسجيل دخول", value: Math.round((logins / totalFeature) * 100), color: "#E8C56B" },
+    { name: "التشخيص", value: Math.round((doctor / totalFeature) * 100), color: "#67E8F9" },
+    { name: "محاكاة", value: Math.round((whatif / totalFeature) * 100), color: "#F59E0B" },
+  ].filter((row) => row.value > 0);
+
+  const filesTotal = users.reduce((sum, user) => sum + user.filesUploaded, 0);
   const alerts = [
-    { id: "a1", tone: "success" as const, text: "مستخدم جديد اشترك في المنصة", time: "منذ 4 د" },
-    ...(transactions.some((row) => row.status === "failed")
-      ? [{ id: "a2", tone: "danger" as const, text: "فشل عملية دفع — راجع الخزينة", time: "منذ 18 د" }]
-      : []),
-    { id: "a3", tone: "warning" as const, text: "ارتفاع مفاجئ في حركة الزوار (+15%)", time: "اليوم" },
+    ...(registers > 0 ? [{ id: "a1", tone: "success" as const, text: `${registers} حساب جديد في الفترة المحددة`, time: "هذه الفترة" }] : []),
+    ...(uploadErrors > 0 ? [{ id: "a2", tone: "danger" as const, text: `${uploadErrors} ملف فشل رفعه`, time: "هذه الفترة" }] : []),
+    ...(users.length === 0 ? [{ id: "a3", tone: "warning" as const, text: "لا يوجد تجار مسجّلون بعد", time: "الآن" }] : []),
+    ...(filesTotal > 0 ? [{ id: "a4", tone: "info" as const, text: `${filesTotal} ملف مبيعات محفوظ لدى التجار`, time: "حتى الآن" }] : []),
   ];
 
   return {
@@ -220,39 +268,35 @@ export function buildAdminSnapshot(range: DateRangeKey, from?: string, to?: stri
     revenueSeries,
     userGrowth,
     activity,
-    inflow: { subscriptions, addons, total: inflowTotal },
-    outflow: { ai, hosting, payments, marketing, total: outflowTotal },
-    margin: Math.round((netProfit / Math.max(1, inflowTotal)) * 1000) / 10,
-    arpu: Math.round((mrr / Math.max(1, activeUsers)) * 10) / 10,
+    inflow: { subscriptions: mrr, addons: 0, total: inflowTotal },
+    outflow: { ai: 0, hosting: 0, payments: 0, marketing: 0, total: outflowTotal },
+    margin: inflowTotal === 0 ? 0 : Math.round((netProfit / inflowTotal) * 1000) / 10,
+    arpu: Math.round((mrr / Math.max(1, activeCount)) * 10) / 10,
     transactions,
     retention: Math.round((activeCount / totalUsers) * 1000) / 10,
     churn: Math.round((churned / totalUsers) * 1000) / 10,
-    ltv: Math.round((mrr / Math.max(1, activeUsers)) * 11),
+    ltv: Math.round((mrr / Math.max(1, activeCount)) * 11),
     planSplit: { free, pro, business },
     users,
     uniqueVisitors,
     pageViews,
-    sources: [
-      { name: "بحث Google", value: 46, color: "#10B981" },
-      { name: "مباشر", value: 28, color: "#3B82F6" },
-      { name: "شبكات التواصل", value: 18, color: "#8B5CF6" },
-      { name: "تحويلات", value: 8, color: "#F59E0B" },
-    ],
-    countries: [
-      { name: "السعودية", visitors: Math.round(uniqueVisitors * 0.48) },
-      { name: "الإمارات", visitors: Math.round(uniqueVisitors * 0.16) },
-      { name: "الأردن", visitors: Math.round(uniqueVisitors * 0.11) },
-      { name: "مصر", visitors: Math.round(uniqueVisitors * 0.09) },
-      { name: "أخرى", visitors: Math.round(uniqueVisitors * 0.16) },
-    ],
+    sources: sources.length ? sources : [{ name: "لا يوجد نشاط بعد", value: 100, color: "#64748B" }],
+    countries: users.slice(0, 8).map((user) => ({
+      name: user.store,
+      visitors: user.filesUploaded + (inRange(user.lastActive, start, end) ? 1 : 0),
+    })),
     conversion,
     features: [
-      { name: "Profit Leak Detector", uses: Math.round(leak) },
-      { name: "What-If Simulator", uses: Math.round(whatif) },
-      { name: "Business Doctor", uses: Math.round(doctor) },
-      { name: "تنظيف Excel", uses: Math.round(120 * scale + countEvents("analyze", start, end)) },
+      { name: "Profit Leak Detector", uses: leak },
+      { name: "What-If Simulator", uses: whatif },
+      { name: "Business Doctor", uses: doctor },
+      { name: "تنظيف Excel", uses: analyze },
     ],
     uploadErrors,
     alerts,
   };
+}
+
+export function buildAdminSnapshot(range: DateRangeKey, from?: string, to?: string): AdminSnapshot {
+  return buildAdminSnapshotFromFacts(collectClientFacts(), range, from, to);
 }

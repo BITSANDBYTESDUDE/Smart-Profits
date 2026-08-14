@@ -26,7 +26,7 @@ export function AdminKpi({
           <Icon className="h-4 w-4" />
         </div>
       </div>
-      <p className="mt-3 text-2xl font-bold text-white">{value}</p>
+      <p className="mt-3 text-2xl font-bold text-foreground">{value}</p>
       <div className="mt-3 flex items-center justify-between text-xs text-muted">
         <span>{hint}</span>
         {change != null && (

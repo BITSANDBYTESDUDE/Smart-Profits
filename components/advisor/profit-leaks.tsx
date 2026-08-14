@@ -4,16 +4,18 @@ import { useEffect } from "react";
 import { Search } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAnalysis } from "@/context/analysis-context";
+import { useAuth } from "@/context/auth-context";
 import { trackPlatform } from "@/lib/admin/track";
 import { formatMoney } from "@/lib/format";
 
 export function ProfitLeaks() {
   const { result, currency } = useAnalysis();
+  const { user } = useAuth();
   const leaks = result?.advisor.leaks ?? [];
 
   useEffect(() => {
-    if (leaks.length) trackPlatform("leak");
-  }, [leaks.length]);
+    if (leaks.length) trackPlatform("leak", undefined, user?.email);
+  }, [leaks.length, user?.email]);
 
   if (!result) return null;
 
@@ -29,7 +31,7 @@ export function ProfitLeaks() {
         {leaks.length === 0 && <p className="text-sm text-muted">لا يظهر تسريب واضح في هذا الملف.</p>}
         {leaks.map((leak) => (
           <div key={leak.id} className="rounded-xl border border-border bg-white/3 p-4">
-            <p className="text-sm font-semibold text-white">{leak.product}</p>
+            <p className="text-sm font-semibold text-foreground">{leak.product}</p>
             <p className="mt-1 text-xs text-muted">
               مبيعات {formatMoney(leak.revenue, currency)} • ربح {formatMoney(leak.profit, currency)}
             </p>

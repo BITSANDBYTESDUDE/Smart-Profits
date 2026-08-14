@@ -35,7 +35,7 @@ export function OpexInsights() {
       : health.tone === "warn"
         ? "border-amber-400/40 bg-amber-400/10"
         : health.tone === "good"
-          ? "border-emerald-400/30 bg-emerald-400/8"
+          ? "border-primary/30 bg-primary/8"
           : "border-primary/30 bg-primary/8";
 
   function saveOpex(next: AppSettings) {
@@ -62,13 +62,13 @@ export function OpexInsights() {
           {health.tone === "bad" ? (
             <AlertTriangle className="mt-0.5 h-5 w-5 text-red-300" />
           ) : health.tone === "good" ? (
-            <ShieldCheck className="mt-0.5 h-5 w-5 text-emerald-300" />
+            <ShieldCheck className="mt-0.5 h-5 w-5 text-primary" />
           ) : (
             <AlertTriangle className="mt-0.5 h-5 w-5 text-amber-300" />
           )}
           <div className="flex-1">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="font-semibold text-white">{health.title}</p>
+              <p className="font-semibold text-foreground">{health.title}</p>
               <p className="text-sm text-slate-200">
                 نسبة التشغيل: <span className="font-bold">{health.ratioPct.toFixed(0)}%</span> من المبيعات
               </p>
@@ -97,11 +97,11 @@ export function OpexInsights() {
                   <Ghost className="h-3.5 w-3.5" />
                   الربح الظاهري (من الملف)
                 </p>
-                <p className="mt-2 text-2xl font-bold text-white">{formatMoney(phantom.phantomProfit, currency)}</p>
+                <p className="mt-2 text-2xl font-bold text-foreground">{formatMoney(phantom.phantomProfit, currency)}</p>
                 <p className="mt-1 text-xs leading-5 text-slate-400">المبيعات − تكلفة البضاعة فقط. هذا ربح البضاعة لا ربح المتجر.</p>
               </div>
-              <div className="rounded-2xl border border-emerald-400/25 bg-emerald-400/8 p-4">
-                <p className="text-xs text-emerald-200">الربح الحقيقي (بعد الثوابت)</p>
+              <div className="rounded-2xl border border-primary/25 bg-primary/8 p-4">
+                <p className="text-xs text-primary">الربح الحقيقي (بعد الثوابت)</p>
                 <p className={cn("mt-2 text-2xl font-bold", phantom.realProfit >= 0 ? "text-accent" : "text-danger")}>
                   {formatMoney(phantom.realProfit, currency)}
                 </p>
@@ -115,7 +115,7 @@ export function OpexInsights() {
             </div>
             <p className="text-sm leading-7 text-slate-300">
               الفرق بين الرقمين:{" "}
-              <span className="font-semibold text-white">{formatMoney(phantom.gap, currency)}</span>
+              <span className="font-semibold text-foreground">{formatMoney(phantom.gap, currency)}</span>
               {phantom.gap > 0
                 ? " — هذا ما يأكله التشغيل الثابت والمتغير من ربح البضاعة. إن لم تُدخل الثوابت سيبدو المتجر أكثر ربحاً مما هو عليه."
                 : " — لا توجد مصاريف ثابتة محتسبة حالياً."}
@@ -142,11 +142,11 @@ export function OpexInsights() {
               </p>
             ) : (
               <>
-                <p className="text-3xl font-bold text-white">
+                <p className="text-3xl font-bold text-foreground">
                   {breakEven.unitsNeeded?.toLocaleString("en-US")} <span className="text-lg font-medium text-slate-400">قطعة</span>
                 </p>
                 <p className="text-sm leading-7 text-slate-200">
-                  أنت بحاجة لبيع <span className="font-semibold text-white">{breakEven.unitsNeeded}</span> قطعة هذا الشهر
+                  أنت بحاجة لبيع <span className="font-semibold text-foreground">{breakEven.unitsNeeded}</span> قطعة هذا الشهر
                   فقط لتغطية إيجارك ورواتبك وفواتيرك (
                   {formatMoney(monthlyOpexFromSettings(settings), currency)}) قبل أن تبدأ بتحقيق ربح صافٍ لك.
                 </p>

@@ -20,7 +20,7 @@ export function SectionTabs({
           onClick={() => onChange(tab.id)}
           className={cn(
             "rounded-xl px-4 py-2 text-sm transition",
-            value === tab.id ? "bg-primary text-white" : "text-slate-400 hover:text-white",
+            value === tab.id ? "bg-primary text-primary-foreground" : "text-muted hover:text-foreground",
           )}
         >
           {tab.label}

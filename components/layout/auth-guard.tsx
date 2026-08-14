@@ -2,10 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { useAppearance } from "@/context/appearance";
 import { useAuth } from "@/context/auth-context";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, ready } = useAuth();
+  const { t } = useAppearance();
   const router = useRouter();
 
   useEffect(() => {
@@ -15,7 +17,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   if (!ready || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background text-muted">
-        جاري التحميل...
+        {t("auth.loading")}
       </div>
     );
   }

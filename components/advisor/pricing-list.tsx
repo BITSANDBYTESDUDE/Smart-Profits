@@ -20,7 +20,7 @@ export function SmartPricingList() {
       <CardContent className="space-y-3">
         {result.advisor.pricing.map((item) => (
           <div key={item.product} className="rounded-xl border border-border p-4">
-            <p className="text-sm font-semibold text-white">{item.product}</p>
+            <p className="text-sm font-semibold text-foreground">{item.product}</p>
             <p className="mt-2 text-sm text-slate-300">
               السعر الحالي {formatMoney(item.currentPrice, currency)} • التكلفة {formatMoney(item.cost, currency)} • الهامش {item.margin.toFixed(0)}%
             </p>

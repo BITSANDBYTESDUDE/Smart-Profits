@@ -49,7 +49,7 @@ export function WhatIfSimulator() {
           <div>
             <Label>المنتج</Label>
             <select
-              className="mt-1 h-11 w-full rounded-xl border border-border bg-[#0f172a]/80 px-3 text-sm text-white"
+              className="mt-1 h-11 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground"
               value={selected.name}
               onChange={(event) => {
                 const item = catalog.find((row) => row.name === event.target.value);
@@ -67,7 +67,7 @@ export function WhatIfSimulator() {
           <div>
             <Label>نوع التجربة</Label>
             <select
-              className="mt-1 h-11 w-full rounded-xl border border-border bg-[#0f172a]/80 px-3 text-sm text-white"
+              className="mt-1 h-11 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground"
               value={mode}
               onChange={(event) => setMode(event.target.value as "price" | "discount")}
             >
@@ -96,7 +96,7 @@ export function WhatIfSimulator() {
           </div>
           <div className="rounded-xl border border-accent/30 bg-accent/8 p-4 text-sm">
             <p className="text-slate-300">الربح الشهري المتوقع</p>
-            <p className="mt-1 text-lg font-bold text-white">
+            <p className="mt-1 text-lg font-bold text-foreground">
               {formatMoney(simulation.currentMonthlyProfit, currency)} → {formatMoney(simulation.newMonthlyProfit, currency)}
             </p>
             <p className={`mt-1 ${simulation.delta >= 0 ? "text-accent" : "text-red-300"}`}>

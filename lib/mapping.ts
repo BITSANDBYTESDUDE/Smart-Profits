@@ -2,12 +2,20 @@ import type { ColumnMapping, ColumnRole, MappingResult } from "./types";
 
 const ROLE_ALIASES: Record<ColumnRole, string[]> = {
   date: [
-    "date",
-    "datetime",
-    "timestamp",
+    "order date",
+    "invoice date",
+    "sale date",
+    "sales date",
+    "transaction date",
+    "trans date",
     "created at",
     "created_at",
+    "datetime",
+    "timestamp",
+    "date",
     "day",
+    "month",
+    "period",
     "التاريخ",
     "تاريخ",
     "تاريخ الحركه",
@@ -15,17 +23,23 @@ const ROLE_ALIASES: Record<ColumnRole, string[]> = {
     "تاريخ العمليه",
     "تاريخ العملية",
     "تاريخ البيع",
+    "تاريخ الفاتوره",
+    "تاريخ الفاتورة",
     "يوم",
     "شهر",
     "الشهر",
-    "month",
-    "period",
   ],
   product: [
-    "product",
     "product name",
-    "item",
     "item name",
+    "item description",
+    "product description",
+    "product title",
+    "merchandise",
+    "description",
+    "product",
+    "item",
+    "title",
     "name",
     "المنتج",
     "اسم المنتج",
@@ -33,25 +47,53 @@ const ROLE_ALIASES: Record<ColumnRole, string[]> = {
     "اسم الصنف",
     "السلعه",
     "السلعة",
+    "الوصف",
+    "اسم السلعه",
+    "اسم السلعة",
   ],
-  sku: ["sku", "barcode", "code", "الكود", "رمز", "كود المنتج", "الباركود"],
+  sku: [
+    "product code",
+    "item code",
+    "part number",
+    "barcode",
+    "sku",
+    "upc",
+    "ean",
+    "code",
+    "الكود",
+    "رمز",
+    "كود المنتج",
+    "الباركود",
+  ],
   quantity: [
-    "qty",
+    "units sold",
+    "qty sold",
+    "quantity sold",
+    "sold qty",
     "quantity",
+    "qty",
     "units",
     "pcs",
+    "count",
+    "sold",
     "الكمية",
     "الكميه",
     "عدد",
     "الكميات",
     "قطعه",
     "قطعة",
+    "العدد المباع",
   ],
   sellingPrice: [
-    "price",
     "selling price",
     "unit price",
     "sale price",
+    "sales price",
+    "retail price",
+    "list price",
+    "sell price",
+    "unit sell",
+    "price",
     "سعر البيع",
     "السعر",
     "سعر الوحده",
@@ -59,12 +101,15 @@ const ROLE_ALIASES: Record<ColumnRole, string[]> = {
     "سعر",
   ],
   costPrice: [
-    "cost",
     "cost price",
-    "purchase",
     "purchase price",
-    "cogs",
     "unit cost",
+    "landed cost",
+    "buy price",
+    "wholesale",
+    "cogs",
+    "cost",
+    "purchase",
     "التكلفه",
     "التكلفة",
     "سعر التكلفه",
@@ -75,12 +120,20 @@ const ROLE_ALIASES: Record<ColumnRole, string[]> = {
     "المشتريات",
   ],
   revenue: [
-    "sale",
-    "sales",
+    "net sales",
+    "gross sales",
+    "total sales",
+    "sales amount",
+    "line total",
+    "line amount",
+    "extended price",
+    "subtotal",
+    "turnover",
     "revenue",
+    "sales",
+    "sale",
     "amount",
     "total",
-    "line total",
     "المبيعات",
     "الايراد",
     "الإيراد",
@@ -91,12 +144,18 @@ const ROLE_ALIASES: Record<ColumnRole, string[]> = {
     "المبلغ",
     "اجمالي المبيعات",
     "إجمالي المبيعات",
+    "صافي المبيعات",
   ],
   expense: [
-    "expense",
+    "operating expense",
+    "operating cost",
+    "expense amount",
     "expenses",
+    "expense",
     "operating",
     "opex",
+    "shipping cost",
+    "delivery fee",
     "مصروف",
     "المصروف",
     "المصاريف",
@@ -106,19 +165,20 @@ const ROLE_ALIASES: Record<ColumnRole, string[]> = {
   ],
   category: [
     "category",
+    "department",
     "section",
     "group",
+    "class",
     "الفئه",
     "الفئة",
     "تصنيف",
-    "نوع",
     "القسم",
     "التصنيف",
   ],
   expenseType: [
     "expense type",
     "expense_type",
-    "type",
+    "cost type",
     "نوع المصروف",
     "نوع المصاريف",
   ],
@@ -127,12 +187,27 @@ const ROLE_ALIASES: Record<ColumnRole, string[]> = {
     "note",
     "remark",
     "remarks",
+    "comment",
+    "comments",
     "الملاحظات",
     "ملاحظات",
     "ملاحظة",
     "البيان",
-    "الوصف",
   ],
+};
+
+const ROLE_PENALTIES: Partial<Record<ColumnRole, string[]>> = {
+  product: ["customer", "client", "vendor", "supplier", "store", "buyer", "cashier", "user", "account"],
+  sku: ["postal", "zip", "phone", "country"],
+  date: ["due", "expiry", "expire", "birth", "delivery date"],
+  quantity: ["available", "on hand", "remaining", "stock", "inventory", "reorder"],
+  sellingPrice: ["cost", "purchase", "wholesale", "buy", "cogs"],
+  costPrice: ["selling", "retail", "list", "sale price"],
+  revenue: ["tax", "vat", "discount", "fee", "refund", "cogs", "cost", "shipping cost"],
+  expense: ["cogs", "cost of goods"],
+  expenseType: ["payment", "transaction", "order", "status", "invoice type"],
+  category: ["payment", "status"],
+  notes: ["product description", "item description"],
 };
 
 export function stripTashkeel(value: string) {
@@ -150,21 +225,35 @@ export function normalizeHeader(header: string) {
     .replace(/\s+/g, " ");
 }
 
-function scoreAlias(header: string, alias: string) {
+function scoreAlias(header: string, alias: string, role: ColumnRole) {
   const h = normalizeHeader(header);
   const a = normalizeHeader(alias);
   if (!h || !a) return 0;
-  if (h === a) return 100;
-  if (h.includes(a) || a.includes(h)) return 82;
-  const hWords = h.split(" ");
-  const aWords = a.split(" ");
-  const overlap = aWords.filter((w) => hWords.includes(w)).length;
-  if (overlap > 0) return 55 + overlap * 8;
-  return 0;
+  const hWords = h.split(" ").filter(Boolean);
+  const aWords = a.split(" ").filter(Boolean);
+
+  let score = 0;
+  if (h === a) score = 100;
+  else if (h.includes(a) || a.includes(h)) {
+    score = aWords.length > 1 ? 92 : 78;
+    if (aWords.length === 1 && a.length <= 5 && hWords.length > 1) score = 58;
+  } else {
+    const overlap = aWords.filter((w) => hWords.includes(w)).length;
+    if (overlap > 0) score = 55 + overlap * 10;
+  }
+
+  if (!score) return 0;
+
+  for (const word of ROLE_PENALTIES[role] ?? []) {
+    const n = normalizeHeader(word);
+    if (h.includes(n) && !a.includes(n)) score -= 45;
+  }
+
+  return Math.max(0, score);
 }
 
 function bestScore(header: string, role: ColumnRole) {
-  return Math.max(...ROLE_ALIASES[role].map((alias) => scoreAlias(header, alias)));
+  return Math.max(...ROLE_ALIASES[role].map((alias) => scoreAlias(header, alias, role)));
 }
 
 export function detectColumns(headers: string[]): MappingResult {
@@ -193,22 +282,27 @@ export function detectColumns(headers: string[]): MappingResult {
     });
 
   if (!mapping.date) {
-    warnings.push("لم يُعثر على عمود تاريخ. سيتم تحليل الملف كفترة واحدة.");
+    warnings.push("No date column found / لم يُعثر على عمود تاريخ. The file will be treated as one period.");
   }
   if (!mapping.revenue && !mapping.sellingPrice) {
     warnings.push(
-      "لم يُعثر على عمود مبيعات أو سعر بيع. تأكد أن الملف يحتوي على أحد الأسماء: المبيعات، سعر البيع، Price.",
+      "No sales or selling-price column found / لم يُعثر على عمود مبيعات أو سعر بيع. Use headers like Sales, Price, Revenue, المبيعات, سعر البيع.",
     );
   }
   if (!mapping.costPrice && !mapping.expense) {
     warnings.push(
-      "لم يُعثر على عمود تكلفة أو مصروف. سيتم احتساب المصاريف التشغيلية من الإعدادات فقط.",
+      "No cost or expense column found / لم يُعثر على عمود تكلفة أو مصروف. Operating costs will come from settings only.",
     );
   }
 
   const unmappedHeaders = headers.filter((header) => !used.has(header));
 
   return { mapping, scores, headers, unmappedHeaders, warnings };
+}
+
+export function isUnspecifiedProduct(name: string) {
+  const n = name.trim().toLowerCase();
+  return !n || ["غير محدد", "unspecified", "unknown", "n/a", "na", "none", "-", "null"].includes(n);
 }
 
 export function mappedRoleCount(headers: string[]) {

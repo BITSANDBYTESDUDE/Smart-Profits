@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAnalysis } from "@/context/analysis-context";
+import { useAppearance } from "@/context/appearance";
 import { formatDateAr } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -23,6 +24,7 @@ export function FileArchiveList({
   openOnSelect?: boolean;
 }) {
   const { files, activeFileId, selectFile, removeFile } = useAnalysis();
+  const { t } = useAppearance();
   const router = useRouter();
   const ordered = sortFiles(files);
 
@@ -32,13 +34,13 @@ export function FileArchiveList({
   }
 
   if (ordered.length === 0) {
-    return <p className="px-3 text-sm text-muted">لا توجد ملفات في الأرشيف بعد.</p>;
+    return <p className="px-3 text-sm text-muted">{t("file.empty")}</p>;
   }
 
   return (
     <div className={cn("space-y-2", compact ? "" : "rounded-2xl border border-border bg-white/3 p-3")}>
-      <p className={cn("text-[11px] font-medium tracking-wide text-slate-500", compact && "mb-1 px-3")}>
-        أرشيف الملفات
+      <p className={cn("text-[11px] font-medium tracking-wide text-muted", compact && "mb-1 px-3")}>
+        {t("file.archive")}
       </p>
       <div className={cn("space-y-1", compact ? "max-h-52 overflow-y-auto" : "")}>
         {ordered.map((file) => {
@@ -48,7 +50,7 @@ export function FileArchiveList({
               key={file.id}
               className={cn(
                 "group flex items-center gap-1 rounded-xl transition",
-                active ? "bg-primary/15 text-white" : "text-slate-400 hover:bg-white/5 hover:text-white",
+                active ? "bg-primary/15 text-foreground" : "text-muted hover:bg-black/5 hover:text-foreground dark:hover:bg-white/5",
               )}
             >
               <button
@@ -61,16 +63,16 @@ export function FileArchiveList({
                   <span className="block truncate">{file.fileName}</span>
                   {!compact && (
                     <span className="mt-0.5 block text-[11px] text-slate-500">
-                      {formatDateAr(new Date(file.uploadedAt))} • {file.rowCount} صف
+                      {formatDateAr(new Date(file.uploadedAt))} • {file.rowCount} {t("file.rows")}
                     </span>
                   )}
                 </span>
                 {file.isDemo ? (
                   <span className="shrink-0 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] text-amber-300">
-                    تجريبي
+                    {t("file.demo")}
                   </span>
                 ) : active ? (
-                  <span className="shrink-0 rounded-full bg-accent/20 px-1.5 py-0.5 text-[10px] text-accent">مفتوح</span>
+                  <span className="shrink-0 rounded-full bg-accent/20 px-1.5 py-0.5 text-[10px] text-accent">{t("file.openNow")}</span>
                 ) : null}
               </button>
               {!file.isDemo && (
@@ -94,10 +96,10 @@ export function FileArchiveList({
         <button
           type="button"
           onClick={() => router.push("/data?tab=archive")}
-          className="mt-1 flex w-full items-center gap-2 px-3 py-1.5 text-xs text-slate-500 hover:text-white"
+          className="mt-1 flex w-full items-center gap-2 px-3 py-1.5 text-xs text-slate-500 hover:text-foreground"
         >
           <Archive className="h-3.5 w-3.5" />
-          فتح الأرشيف كاملاً
+          {t("file.fullArchive")}
         </button>
       )}
     </div>
@@ -106,6 +108,7 @@ export function FileArchiveList({
 
 export function FileArchiveCards() {
   const { files, activeFileId, selectFile, removeFile } = useAnalysis();
+  const { t } = useAppearance();
   const router = useRouter();
   const ordered = sortFiles(files);
   const uploaded = ordered.filter((file) => !file.isDemo);
@@ -114,10 +117,10 @@ export function FileArchiveCards() {
     return (
       <div className="rounded-2xl border border-dashed border-slate-600 p-8 text-center">
         <Archive className="mx-auto mb-3 h-10 w-10 text-slate-500" />
-        <p className="text-white">الأرشيف فارغ</p>
-        <p className="mt-2 text-sm text-muted">ارفع Excel أو PDF أو صورة، وستبقى هنا حتى تضغط عليها لفتح التحليل.</p>
+        <p className="text-foreground">{t("file.emptyTitle")}</p>
+        <p className="mt-2 text-sm text-muted">{t("file.emptyHint")}</p>
         <Button className="mt-4" onClick={() => router.push("/data")}>
-          رفع ملف
+          {t("file.upload")}
         </Button>
       </div>
     );
@@ -137,12 +140,12 @@ export function FileArchiveCards() {
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-white">{file.fileName}</p>
+                <p className="truncate text-sm font-semibold text-foreground">{file.fileName}</p>
                 <p className="mt-1 text-xs text-muted">
-                  {formatDateAr(new Date(file.uploadedAt))} • {file.rowCount} صف
+                  {formatDateAr(new Date(file.uploadedAt))} • {file.rowCount} {t("file.rows")}
                 </p>
               </div>
-              {file.isDemo ? <Badge tone="warning">تجريبي</Badge> : active ? <Badge tone="success">مفتوح الآن</Badge> : null}
+              {file.isDemo ? <Badge tone="warning">{t("file.demo")}</Badge> : active ? <Badge tone="success">{t("file.openNowLong")}</Badge> : null}
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
               <Button
@@ -153,17 +156,17 @@ export function FileArchiveCards() {
                   router.push("/data");
                 }}
               >
-                {active ? "متابعة التحليل" : "فتح التحليل"}
+                {active ? t("file.continue") : t("file.open")}
               </Button>
               <Button size="sm" variant="outline" onClick={() => {
                 selectFile(file.id);
                 router.push("/dashboard");
               }}>
-                لوحة القيادة
+                {t("file.dashboard")}
               </Button>
               {!file.isDemo && (
                 <Button size="sm" variant="ghost" onClick={() => removeFile(file.id)}>
-                  حذف
+                  {t("file.delete")}
                 </Button>
               )}
             </div>

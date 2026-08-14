@@ -11,19 +11,20 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { SectionTabs } from "@/components/ui/section-tabs";
 import { useAnalysis } from "@/context/analysis-context";
-import { SAMPLE_CSV_TEMPLATE } from "@/lib/sample-data";
-
-const TABS = [
-  { id: "upload", label: "الرفع والمعالجة" },
-  { id: "archive", label: "الأرشيف" },
-];
+import { useAppearance } from "@/context/appearance";
+import { SAMPLE_CSV_TEMPLATE, SAMPLE_CSV_TEMPLATE_EN } from "@/lib/sample-data";
 
 function DataPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t, locale } = useAppearance();
   const tab = searchParams.get("tab") === "archive" ? "archive" : "upload";
   const wantsNewUpload = searchParams.get("new") === "1";
   const { parseResult, isProcessing, error, resetToDemo, files } = useAnalysis();
+  const tabs = [
+    { id: "upload", label: t("data.tab.upload") },
+    { id: "archive", label: t("data.tab.archive") },
+  ];
   const uploadedCount = files.filter((file) => !file.isDemo).length;
   const hasAnalysis = Boolean(parseResult);
   const showDropzone = tab === "upload" && (wantsNewUpload || !hasAnalysis);
@@ -33,23 +34,21 @@ function DataPageInner() {
   }
 
   function downloadTemplate() {
-    const blob = new Blob(["\uFEFF" + SAMPLE_CSV_TEMPLATE], { type: "text/csv;charset=utf-8;" });
+    const csv = locale === "en" ? SAMPLE_CSV_TEMPLATE_EN : SAMPLE_CSV_TEMPLATE;
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "smartprofit-template.csv";
+    a.download = locale === "en" ? "smartprofit-template-en.csv" : "smartprofit-template.csv";
     a.click();
     URL.revokeObjectURL(url);
   }
 
   return (
     <>
-      <AppHeader
-        title="إدارة الملفات والبيانات"
-        subtitle="رفع، تنظيف Messy Excel، وأرشيف الملفات في تدفق واحد"
-      />
+      <AppHeader title={t("data.title")} subtitle={t("data.subtitle")} />
       <div className="space-y-5 p-6">
-        <SectionTabs tabs={TABS} value={tab} onChange={setTab} />
+        <SectionTabs tabs={tabs} value={tab} onChange={setTab} />
 
         {tab === "upload" ? (
           <>
@@ -58,14 +57,14 @@ function DataPageInner() {
                 <FileDropzone
                   compact={hasAnalysis}
                   redirectToAnalysis={false}
-                  title={isProcessing ? "جاري دراسة الأعمدة وتنظيف الملف..." : "اسحب Excel أو CSV أو PDF أو صورة هنا"}
+                  title={isProcessing ? t("data.studying") : t("data.drop")}
                 />
                 <div className="flex flex-wrap gap-3">
                   <Button variant="outline" onClick={downloadTemplate}>
-                    تحميل قالب البيانات
+                    {t("data.template")}
                   </Button>
                   <Button variant="ghost" onClick={resetToDemo}>
-                    استعادة البيانات التجريبية
+                    {t("data.restoreDemo")}
                   </Button>
                 </div>
               </>
@@ -77,10 +76,10 @@ function DataPageInner() {
         ) : (
           <>
             <Card className="border-primary/30 bg-primary/8 p-5">
-              <h2 className="text-lg font-semibold text-white">ملفاتك المحفوظة: {uploadedCount}</h2>
-              <p className="mt-1 text-sm leading-7 text-slate-300">
-                اضغط «فتح التحليل» لأي ملف. التشخيص والمحاكاة والتقارير تتحول كلها إلى بياناته.
-              </p>
+              <h2 className="text-lg font-semibold text-foreground">
+                {t("data.saved")}: {uploadedCount}
+              </h2>
+              <p className="mt-1 text-sm leading-7 text-muted">{t("data.savedHint")}</p>
             </Card>
             <FileArchiveCards />
           </>
@@ -90,9 +89,14 @@ function DataPageInner() {
   );
 }
 
+function DataFallback() {
+  const { t } = useAppearance();
+  return <p className="p-6 text-sm text-muted">{t("data.loading")}</p>;
+}
+
 export default function DataPage() {
   return (
-    <Suspense fallback={<p className="p-6 text-sm text-muted">جاري تحميل الملفات...</p>}>
+    <Suspense fallback={<DataFallback />}>
       <DataPageInner />
     </Suspense>
   );
