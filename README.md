@@ -1,36 +1,39 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SmartProfit — سمارت بروفيت
 
-## Getting Started
+منصة SaaS عربية (RTL) لتحليل ملفات Excel/CSV غير المنتظمة، حساب المؤشرات المالية، والتنبؤ بالشهر القادم.
 
-First, run the development server:
+## التشغيل
 
 ```bash
+cd smart-profit
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+ثم افتح [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. أنشئ حساباً من صفحة التسجيل.
+2. ستظهر لوحة التحكم ببيانات تجريبية.
+3. ارفع ملف `.xlsx` أو `.csv` لاستبدال الأرقام بأرقام متجرك.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## ماذا يفعل النظام عند رفع ملف؟
 
-## Learn More
+1. **استخراج:** قراءة Excel عبر `xlsx` أو CSV عبر `papaparse`.
+2. **تنظيف:** إزالة ر.س و `$` والفواصل وتحويل الأرقام العربية.
+3. **ربط ذكي:** اكتشاف أعمدة التاريخ، سعر البيع، التكلفة، الكمية، المصروف بالعربية والإنجليزية.
+4. **المحرك المحاسبي:** إيراد، COGS، OPEX، صافي الربح، الهامش، مؤشر الصحة 0–100.
+5. **التنبؤ:** انحدار خطي على آخر 3–6 أشهر + إنذار إذا توقع خسارة.
 
-To learn more about Next.js, take a look at the following resources:
+## أهم الملفات
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| الملف | الدور |
+|---|---|
+| `lib/parser.ts` | قراءة وتنظيف الملفات |
+| `lib/mapping.ts` | اكتشاف الأعمدة |
+| `lib/analytics.ts` | الحسابات المحاسبية |
+| `lib/forecast.ts` | الانحدار الخطي والتنبيهات |
+| `app/api/analyze/route.ts` | مسار تحليل اختياري من الخادم |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## قالب الملف
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+`public/templates/smartprofit-template.csv`
