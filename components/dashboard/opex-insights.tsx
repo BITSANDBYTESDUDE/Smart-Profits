@@ -6,6 +6,7 @@ import { OpexSetupModal } from "@/components/opex/opex-setup-modal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAnalysis } from "@/context/analysis-context";
+import { useAppearance } from "@/context/appearance";
 import { formatMoney, monthKey } from "@/lib/format";
 import { computeBreakEven, computeOpexHealth, computeRealVsPhantom, monthlyOpexFromSettings } from "@/lib/opex";
 import type { AppSettings } from "@/lib/types";
@@ -13,6 +14,7 @@ import { cn } from "@/lib/utils";
 
 export function OpexInsights() {
   const { result, parseResult, settings, currency, saveSettings } = useAnalysis();
+  const { t } = useAppearance();
   const [setupOpen, setSetupOpen] = useState(false);
   const latest = result?.monthlySeries.at(-1);
   const txs = useMemo(() => {
@@ -43,16 +45,33 @@ export function OpexInsights() {
     setSetupOpen(false);
   }
 
+  const healthTitle =
+    health.tone === "idle"
+      ? t("opex.h.idle")
+      : health.tone === "bad"
+        ? t("opex.h.bad")
+        : health.tone === "warn"
+          ? t("opex.h.warn")
+          : t("opex.h.ok");
+  const healthMsg =
+    health.tone === "idle"
+      ? settings.opexIncludedInFile
+        ? t("opex.m.idleIn")
+        : t("opex.m.idleOut")
+      : health.tone === "bad"
+        ? t("opex.m.bad").replace("{n}", String(health.ratioPct.toFixed(0))).replace("{g}", String(health.ofGrossPct.toFixed(0)))
+        : health.tone === "warn"
+          ? t("opex.m.warn").replace("{n}", String(health.ratioPct.toFixed(0)))
+          : t("opex.m.ok").replace("{n}", String(health.ratioPct.toFixed(0)));
+
   return (
     <>
       {!settings.opexSetupCompleted && (
         <Card className="border-amber-400/30 bg-amber-400/8 p-5">
-          <p className="text-sm font-semibold text-amber-100">صافي الربح قد يكون وهمياً</p>
-          <p className="mt-1 text-sm leading-7 text-slate-300">
-            ملف المبيعات لا يتضمن عادةً الإيجار والرواتب والفواتير. أكّد مصاريفك الثابتة لنحسب الربح الحقيقي ونقطة التعادل.
-          </p>
+          <p className="text-sm font-semibold text-amber-100">{t("opex.phantomWarn")}</p>
+          <p className="mt-1 text-sm leading-7 text-slate-300">{t("opex.phantomBody")}</p>
           <Button className="mt-3" onClick={() => setSetupOpen(true)}>
-            إدخال المصاريف الثابتة الآن
+            {t("opex.enterNow")}
           </Button>
         </Card>
       )}
@@ -68,12 +87,12 @@ export function OpexInsights() {
           )}
           <div className="flex-1">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="font-semibold text-foreground">{health.title}</p>
+              <p className="font-semibold text-foreground">{healthTitle}</p>
               <p className="text-sm text-slate-200">
-                نسبة التشغيل: <span className="font-bold">{health.ratioPct.toFixed(0)}%</span> من المبيعات
+                {t("opex.ratio")}: <span className="font-bold">{health.ratioPct.toFixed(0)}%</span> {t("opex.ofSales")}
               </p>
             </div>
-            <p className="mt-2 text-sm leading-7 text-slate-200">{health.message}</p>
+            <p className="mt-2 text-sm leading-7 text-slate-200">{healthMsg}</p>
           </div>
         </div>
       </Card>
@@ -83,11 +102,11 @@ export function OpexInsights() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Scale className="h-4 w-4 text-primary" />
-              الربح الحقيقي مقابل الربح الوهمي
+              {t("opex.realVsPhantom")}
             </CardTitle>
             <Button size="sm" variant="outline" onClick={() => setSetupOpen(true)}>
               <Pencil className="h-3.5 w-3.5" />
-              تعديل الثوابت
+              {t("opex.editFixed")}
             </Button>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -95,30 +114,29 @@ export function OpexInsights() {
               <div className="rounded-2xl border border-amber-400/25 bg-amber-400/8 p-4">
                 <p className="flex items-center gap-1.5 text-xs text-amber-200">
                   <Ghost className="h-3.5 w-3.5" />
-                  الربح الظاهري (من الملف)
+                  {t("opex.phantom")}
                 </p>
                 <p className="mt-2 text-2xl font-bold text-foreground">{formatMoney(phantom.phantomProfit, currency)}</p>
-                <p className="mt-1 text-xs leading-5 text-slate-400">المبيعات − تكلفة البضاعة فقط. هذا ربح البضاعة لا ربح المتجر.</p>
+                <p className="mt-1 text-xs leading-5 text-slate-400">{t("opex.phantomHint")}</p>
               </div>
               <div className="rounded-2xl border border-primary/25 bg-primary/8 p-4">
-                <p className="text-xs text-primary">الربح الحقيقي (بعد الثوابت)</p>
+                <p className="text-xs text-primary">{t("opex.real")}</p>
                 <p className={cn("mt-2 text-2xl font-bold", phantom.realProfit >= 0 ? "text-accent" : "text-danger")}>
                   {formatMoney(phantom.realProfit, currency)}
                 </p>
                 <p className="mt-1 text-xs leading-5 text-slate-400">
-                  بعد خصم إيجار {formatMoney(settings.opexIncludedInFile ? 0 : settings.rent, currency)} + رواتب{" "}
-                  {formatMoney(settings.opexIncludedInFile ? 0 : settings.salaries, currency)} + فواتير{" "}
-                  {formatMoney(settings.opexIncludedInFile ? 0 : settings.utilities || 0, currency)} + تسويق{" "}
-                  {formatMoney(settings.opexIncludedInFile ? 0 : settings.otherOpex, currency)}.
+                  {t("opex.after")
+                    .replace("{rent}", formatMoney(settings.opexIncludedInFile ? 0 : settings.rent, currency))
+                    .replace("{sal}", formatMoney(settings.opexIncludedInFile ? 0 : settings.salaries, currency))
+                    .replace("{util}", formatMoney(settings.opexIncludedInFile ? 0 : settings.utilities || 0, currency))
+                    .replace("{mkt}", formatMoney(settings.opexIncludedInFile ? 0 : settings.otherOpex, currency))}
                 </p>
               </div>
             </div>
             <p className="text-sm leading-7 text-slate-300">
-              الفرق بين الرقمين:{" "}
+              {t("opex.gap")}:{" "}
               <span className="font-semibold text-foreground">{formatMoney(phantom.gap, currency)}</span>
-              {phantom.gap > 0
-                ? " — هذا ما يأكله التشغيل الثابت والمتغير من ربح البضاعة. إن لم تُدخل الثوابت سيبدو المتجر أكثر ربحاً مما هو عليه."
-                : " — لا توجد مصاريف ثابتة محتسبة حالياً."}
+              {phantom.gap > 0 ? t("opex.gapYes") : t("opex.gapNo")}
             </p>
           </CardContent>
         </Card>
@@ -127,41 +145,38 @@ export function OpexInsights() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calculator className="h-4 w-4 text-primary" />
-              نقطة التعادل
+              {t("opex.be")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {breakEven.fixedOpex <= 0 ? (
-              <p className="text-sm leading-7 text-slate-300">
-                أدخل مصاريفك الثابتة لنحسب كم قطعة يجب أن تبيع هذا الشهر لتغطية الإيجار والرواتب قبل أي ربح صافٍ.
-              </p>
+              <p className="text-sm leading-7 text-slate-300">{t("opex.beNeed")}</p>
             ) : breakEven.impossible ? (
               <p className="text-sm leading-7 text-red-200">
-                متوسط ربح القطعة صفر أو سالب. لا يمكن تغطية مصاريف ثابتة قدرها {formatMoney(breakEven.fixedOpex, currency)}{" "}
-                قبل إصلاح التسعير أو التكلفة.
+                {t("opex.beImpossible").replace("{n}", formatMoney(breakEven.fixedOpex, currency))}
               </p>
             ) : (
               <>
                 <p className="text-3xl font-bold text-foreground">
-                  {breakEven.unitsNeeded?.toLocaleString("en-US")} <span className="text-lg font-medium text-slate-400">قطعة</span>
+                  {breakEven.unitsNeeded?.toLocaleString("en-US")}{" "}
+                  <span className="text-lg font-medium text-slate-400">{t("opex.unit")}</span>
                 </p>
                 <p className="text-sm leading-7 text-slate-200">
-                  أنت بحاجة لبيع <span className="font-semibold text-foreground">{breakEven.unitsNeeded}</span> قطعة هذا الشهر
-                  فقط لتغطية إيجارك ورواتبك وفواتيرك (
-                  {formatMoney(monthlyOpexFromSettings(settings), currency)}) قبل أن تبدأ بتحقيق ربح صافٍ لك.
+                  {t("opex.beNeedSell")
+                    .replace("{n}", String(breakEven.unitsNeeded))
+                    .replace("{money}", formatMoney(monthlyOpexFromSettings(settings), currency))}
                 </p>
                 <p className="text-sm text-slate-400">
-                  بعت حتى الآن {breakEven.unitsSold.toLocaleString("en-US")} قطعة
+                  {t("opex.soldSoFar").replace("{n}", breakEven.unitsSold.toLocaleString("en-US"))}
                   {breakEven.covered
-                    ? " — تجاوزت نقطة التعادل."
-                    : ` — يتبقى ${breakEven.remainingUnits.toLocaleString("en-US")} قطعة.`}
-                  {breakEven.revenueNeeded
-                    ? ` • أو مبيعات بنحو ${formatMoney(breakEven.revenueNeeded, currency)}.`
-                    : ""}
+                    ? t("opex.passed")
+                    : t("opex.remain").replace("{n}", (breakEven.remainingUnits ?? 0).toLocaleString("en-US"))}
+                  {breakEven.revenueNeeded ? t("opex.orRev").replace("{n}", formatMoney(breakEven.revenueNeeded, currency)) : ""}
                 </p>
                 <p className="text-xs text-muted">
-                  متوسط مساهمة القطعة: {formatMoney(breakEven.avgUnitContribution, currency)} • هامش البضاعة{" "}
-                  {breakEven.grossMarginPct.toFixed(0)}%
+                  {t("opex.contrib")
+                    .replace("{n}", formatMoney(breakEven.avgUnitContribution, currency))
+                    .replace("{m}", breakEven.grossMarginPct.toFixed(0))}
                 </p>
               </>
             )}
@@ -173,7 +188,7 @@ export function OpexInsights() {
         open={setupOpen}
         onClose={() => setSetupOpen(false)}
         onConfirm={saveOpex}
-        confirmLabel="حفظ وإعادة حساب الربح الحقيقي"
+        confirmLabel={t("opex.recalc")}
       />
     </>
   );

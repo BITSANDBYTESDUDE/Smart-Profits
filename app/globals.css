@@ -116,6 +116,43 @@ html.light .auth-brand-panel .auth-brand-card {
     inset 0 1px 0 rgb(255 255 255 / 0.9);
 }
 
+html.dark .auth-brand-panel {
+  background:
+    radial-gradient(1100px 500px at 50% 18%, color-mix(in srgb, var(--primary) 18%, transparent), transparent 62%),
+    linear-gradient(180deg, #102038 0%, #0b1120 48%, #0d1b30 100%);
+}
+
+html.dark .auth-brand-panel .auth-brand-grid {
+  opacity: 1;
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--primary) 42%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--accent) 30%, transparent) 1px, transparent 1px);
+  background-size: 36px 36px;
+  mask-image: radial-gradient(ellipse at center, #000 30%, transparent 78%);
+  -webkit-mask-image: radial-gradient(ellipse at center, #000 30%, transparent 78%);
+}
+
+html.dark .auth-brand-panel .auth-brand-veil {
+  background: linear-gradient(to top, rgb(11 17 32 / 0.55), transparent 44%, rgb(79 209 197 / 0.1));
+}
+
+html.dark .auth-brand-panel .auth-brand-glow-a {
+  background: rgb(79 209 197 / 0.4);
+}
+
+html.dark .auth-brand-panel .auth-brand-glow-b {
+  background: rgb(232 197 107 / 0.3);
+}
+
+html.dark .auth-brand-panel .auth-brand-card {
+  background: rgb(18 28 48 / 0.96);
+  border-color: color-mix(in srgb, var(--primary) 58%, transparent);
+  box-shadow:
+    0 28px 56px -18px rgb(0 0 0 / 0.65),
+    0 0 0 1px color-mix(in srgb, var(--primary) 32%, transparent),
+    inset 0 1px 0 rgb(167 243 233 / 0.16);
+}
+
 html:not(.dark) .text-slate-200,
 html:not(.dark) .text-slate-300 {
   color: var(--foreground);

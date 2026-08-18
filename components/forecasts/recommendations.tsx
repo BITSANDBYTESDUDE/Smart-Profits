@@ -5,23 +5,27 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAnalysis } from "@/context/analysis-context";
+import { useAppearance } from "@/context/appearance";
 import { useSmartGuard } from "@/context/smart-guard-context";
+import { localizeRecommendation } from "@/lib/localize-advisor";
 import { cn } from "@/lib/utils";
 import { GuardBlockedError } from "@/lib/smart-guard/client";
 import { toast } from "sonner";
 
 export function Recommendations() {
   const { result, applyRecommendation, actionLog, activeFileId } = useAnalysis();
+  const { t } = useAppearance();
   const { protect } = useSmartGuard();
   const router = useRouter();
   if (!result) return null;
+  const margin = result.kpis.profitMargin;
 
   return (
     <Card className="h-full">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Pin className="h-4 w-4 text-primary" />
-          توصيات الذكاء الاصطناعي
+          {t("sim.ai")}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -29,6 +33,7 @@ export function Recommendations() {
           const alreadyLogged = actionLog.some(
             (entry) => entry.fileId === activeFileId && entry.recommendationId === rec.id,
           );
+          const copy = localizeRecommendation(rec.id, margin, t);
           return (
             <div
               key={rec.id}
@@ -38,9 +43,9 @@ export function Recommendations() {
               )}
             >
               <h4 className={cn("text-sm font-semibold", rec.tone === "positive" ? "text-accent" : "text-red-300")}>
-                {rec.title}
+                {copy.title}
               </h4>
-              <p className="mt-2 text-sm leading-6 text-slate-300">{rec.body}</p>
+              <p className="mt-2 text-sm leading-6 text-slate-300">{copy.body}</p>
               <Button
                 size="sm"
                 variant={alreadyLogged ? "outline" : rec.tone === "positive" ? "accent" : "default"}
@@ -50,11 +55,7 @@ export function Recommendations() {
                     try {
                       await protect("price_change");
                       applyRecommendation(rec);
-                      toast.success(
-                        alreadyLogged
-                          ? "هذه التوصية موجودة مسبقاً في سجل الإجراءات."
-                          : "تم تسجيل التوصية في سجل الإجراءات.",
-                      );
+                      toast.success(alreadyLogged ? t("sim.logged") : t("sim.saved"));
                       router.push("/settings?tab=actions");
                     } catch (error) {
                       if (error instanceof GuardBlockedError) return;
@@ -62,7 +63,7 @@ export function Recommendations() {
                   })();
                 }}
               >
-                {alreadyLogged ? "عرض في السجل" : rec.actionLabel}
+                {alreadyLogged ? t("sim.viewLog") : copy.actionLabel}
               </Button>
             </div>
           );

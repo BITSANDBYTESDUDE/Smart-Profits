@@ -31,6 +31,12 @@ export function AdvisorHelpCards() {
         </CardHeader>
         <CardContent className="text-sm leading-7 text-muted">{t("advisor.help.net.body")}</CardContent>
       </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("advisor.help.know")}</CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm leading-7 text-muted">{t("advisor.help.know.body")}</CardContent>
+      </Card>
     </div>
   );
 }

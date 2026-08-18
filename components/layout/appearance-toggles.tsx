@@ -8,7 +8,7 @@ export function AppearanceToggles({ className }: { className?: string }) {
   const { theme, setTheme, locale, setLocale, t } = useAppearance();
 
   return (
-    <div className={cn("flex flex-wrap items-center gap-2", className)}>
+    <div className={cn("flex flex-nowrap items-center gap-2", className)}>
       <div className="flex items-center rounded-xl border border-border bg-card p-1 text-xs">
         <button
           type="button"

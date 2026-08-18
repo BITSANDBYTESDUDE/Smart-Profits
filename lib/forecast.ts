@@ -124,6 +124,7 @@ function buildAlerts(
       message: `إذا استمر النمط الحالي، سيدخل المتجر في خسارة متوقعة الشهر القادم بقيمة تقارب ${Math.abs(Math.round(nextProfit)).toLocaleString("en-US")} ر.س.`,
       recommendation:
         "راجع عقود الموردين وخفّض المصاريف المتغيرة فوراً، مع إعادة تسعير المنتجات ذات الهامش المنخفض.",
+      value: Math.abs(Math.round(nextProfit)),
     });
   }
 
@@ -137,6 +138,7 @@ function buildAlerts(
         title: "تراجع حاد في المبيعات",
         message: `انخفضت المبيعات بنسبة ${Math.abs(catDrop).toFixed(1)}% مقارنة بالشهر السابق. إن استمر التراجع فقد يظهر عجز في التدفق النقدي خلال 45 يوماً.`,
         recommendation: "قلّل طلبات المخزون للفئات المتراجعة وأطلق عرض تصفية مدروس للمنتجات الراكدة.",
+        value: Math.abs(Number(catDrop.toFixed(1))),
       });
     }
   }

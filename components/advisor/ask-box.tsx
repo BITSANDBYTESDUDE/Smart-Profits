@@ -8,10 +8,15 @@ import { Input } from "@/components/ui/input";
 import { useAnalysis } from "@/context/analysis-context";
 import { useAppearance } from "@/context/appearance";
 import { answerMerchantQuestion, resultForQuestion } from "@/lib/qa";
+import { answerKnowledge, detectKnowledgeTopic } from "@/lib/advisor-knowledge";
 import { scopeFromQuestion } from "@/lib/scope";
 
 const HINTS = {
   ar: [
+    "معلومات عن الربح",
+    "كتب للتجارة",
+    "نصائح تسوّق",
+    "قواعد الشراء",
     "مين أعلى منتج ربح؟",
     "بدي خطة تسويقية",
     "المنتج الأكثر مبيعاً؟",
@@ -23,6 +28,10 @@ const HINTS = {
     "حلّل منتج سماعات لاسلكية",
   ],
   en: [
+    "How does profit work?",
+    "Books for merchants",
+    "Shopping tips",
+    "Purchasing rules",
     "What is the highest profit product?",
     "Give me a marketing plan",
     "What is the best seller?",
@@ -51,7 +60,9 @@ export function AdvisorAskBox({ chat = false }: { chat?: boolean }) {
     const text = next.trim();
     if (!text) return;
     if (!result) {
-      setTurns((prev) => [...prev, { q: text, a: t("advisor.chat.needFile") }]);
+      const topic = detectKnowledgeTopic(text);
+      const answer = topic ? answerKnowledge(topic, locale) : t("advisor.chat.needFile");
+      setTurns((prev) => [...prev, { q: text, a: answer }]);
       setQuestion("");
       return;
     }

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAnalysis } from "@/context/analysis-context";
+import { useAppearance } from "@/context/appearance";
 import { useSmartGuard } from "@/context/smart-guard-context";
 import { dataSpanDays, simulateWhatIf } from "@/lib/advisor";
 import { formatMoney } from "@/lib/format";
@@ -15,6 +16,7 @@ import { toast } from "sonner";
 
 export function WhatIfSimulator() {
   const { result, parseResult, currency } = useAnalysis();
+  const { t } = useAppearance();
   const { protect } = useSmartGuard();
   const catalog = result?.productHighlights.catalog ?? [];
   const [product, setProduct] = useState(catalog[0]?.name ?? "");
@@ -35,7 +37,7 @@ export function WhatIfSimulator() {
   if (!result || !selected || !simulation) {
     return (
       <Card className="p-6">
-        <p className="text-sm text-muted">ارفع ملفاً فيه منتجات حتى تعمل محاكاة «ماذا لو».</p>
+        <p className="text-sm text-muted">{t("sim.needProducts")}</p>
       </Card>
     );
   }
@@ -45,13 +47,13 @@ export function WhatIfSimulator() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <SlidersHorizontal className="h-4 w-4 text-primary" />
-          ماذا لو؟ — جرّب القرار قبل التنفيذ
+          {t("sim.whatif")}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid gap-3 md:grid-cols-3">
           <div>
-            <Label>المنتج</Label>
+            <Label>{t("ui.product")}</Label>
             <select
               className="mt-1 h-11 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground"
               value={selected.name}
@@ -69,24 +71,24 @@ export function WhatIfSimulator() {
             </select>
           </div>
           <div>
-            <Label>نوع التجربة</Label>
+            <Label>{t("sim.mode")}</Label>
             <select
               className="mt-1 h-11 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground"
               value={mode}
               onChange={(event) => setMode(event.target.value as "price" | "discount")}
             >
-              <option value="price">رفع / تعديل السعر</option>
-              <option value="discount">خصم نسبة</option>
+              <option value="price">{t("sim.mode.price")}</option>
+              <option value="discount">{t("sim.mode.discount")}</option>
             </select>
           </div>
           {mode === "price" ? (
             <div>
-              <Label>السعر الجديد</Label>
+              <Label>{t("sim.newPrice")}</Label>
               <Input className="mt-1" type="number" value={price} onChange={(e) => setPrice(Number(e.target.value) || 0)} />
             </div>
           ) : (
             <div>
-              <Label>نسبة الخصم %</Label>
+              <Label>{t("sim.discountPct")}</Label>
               <Input className="mt-1" type="number" value={discount} onChange={(e) => setDiscount(Number(e.target.value) || 0)} />
             </div>
           )}
@@ -94,41 +96,47 @@ export function WhatIfSimulator() {
 
         <div className="grid gap-3 md:grid-cols-2">
           <div className="rounded-xl border border-border p-4 text-sm text-slate-300">
-            <p>السعر الحالي: {formatMoney(simulation.currentPrice, currency)}</p>
-            <p className="mt-1">السعر الجديد: {formatMoney(simulation.newPrice, currency)}</p>
-            <p className="mt-1">ربح القطعة: {formatMoney(simulation.currentUnitProfit, currency)} → {formatMoney(simulation.newUnitProfit, currency)}</p>
+            <p>
+              {t("sim.curPrice")}: {formatMoney(simulation.currentPrice, currency)}
+            </p>
+            <p className="mt-1">
+              {t("sim.newPrice")}: {formatMoney(simulation.newPrice, currency)}
+            </p>
+            <p className="mt-1">
+              {t("sim.unitProfit")}: {formatMoney(simulation.currentUnitProfit, currency)} → {formatMoney(simulation.newUnitProfit, currency)}
+            </p>
           </div>
           <div className="rounded-xl border border-accent/30 bg-accent/8 p-4 text-sm">
-            <p className="text-slate-300">الربح الشهري المتوقع</p>
+            <p className="text-slate-300">{t("sim.monthProfit")}</p>
             <p className="mt-1 text-lg font-bold text-foreground">
               {formatMoney(simulation.currentMonthlyProfit, currency)} → {formatMoney(simulation.newMonthlyProfit, currency)}
             </p>
             <p className={`mt-1 ${simulation.delta >= 0 ? "text-accent" : "text-red-300"}`}>
-              الفرق: {simulation.delta >= 0 ? "+" : ""}
+              {t("sim.delta")}: {simulation.delta >= 0 ? "+" : ""}
               {formatMoney(simulation.delta, currency)}
             </p>
           </div>
         </div>
-        <p className="text-sm leading-7 text-slate-200">{simulation.verdict}</p>
+        <p className="text-sm leading-7 text-slate-200">{t(simulation.verdictKey)}</p>
         <div className="flex flex-wrap gap-2">
-        <Button variant="outline" onClick={() => setPrice(simulation.currentPrice)}>
-          إعادة السعر الحالي
-        </Button>
-        <Button
-          onClick={() => {
-            void (async () => {
-              try {
-                await protect("price_change");
-                toast.success("Smart Guard سمح بتغيير السعر.");
-              } catch (error) {
-                if (error instanceof GuardBlockedError) return;
-                toast.error("تعذر تطبيق تغيير السعر.");
-              }
-            })();
-          }}
-        >
-          تطبيق تغيير السعر
-        </Button>
+          <Button variant="outline" onClick={() => setPrice(simulation.currentPrice)}>
+            {t("sim.resetPrice")}
+          </Button>
+          <Button
+            onClick={() => {
+              void (async () => {
+                try {
+                  await protect("price_change");
+                  toast.success(t("sim.guardOk"));
+                } catch (error) {
+                  if (error instanceof GuardBlockedError) return;
+                  toast.error(t("sim.guardFail"));
+                }
+              })();
+            }}
+          >
+            {t("sim.applyPrice")}
+          </Button>
         </div>
       </CardContent>
     </Card>

@@ -1,6 +1,7 @@
 import { formatMoney } from "./format";
 import type { Locale } from "./i18n";
 import { runFullAnalysis } from "./analytics";
+import { answerKnowledge, detectKnowledgeTopic, isTeachingQuestion } from "./advisor-knowledge";
 import { detectMonthKeyFromText, detectProductFromText, filterTransactions, uniqueProducts, type AnalysisScope } from "./scope";
 import type { AnalysisResult, AppSettings, CurrencyCode, ParseResult, ProductPerformance, TaxonomyMap } from "./types";
 
@@ -69,7 +70,7 @@ function scoreIntents(q: string): Partial<Record<Intent, number>> {
     add("qty", 4);
   }
   if (has(q, ["مبيع", "مبيعات", "ايراد", "ايرادات", "بعنا", "sales", "revenue", "sold", "بيعات"])) add("sales", 3);
-  if (has(q, ["ربح", "ارباح", "مكسب", "صافي", "profit"])) add("profit", 3);
+  if (has(q, ["ربح", "ارباح", "مكسب", "صافي", "profit"]) && !isTeachingQuestion(q)) add("profit", 3);
   if (has(q, ["هامش", "margin"])) add("margin", 3);
   if (has(q, ["اعلى", "اعلا", "اعلي", "اكثر", "افضل", "احسن", "اكبر", "top", "most", "highest", "best", "biggest"])) {
     add("rank_top", 3);
@@ -79,7 +80,9 @@ function scoreIntents(q: string): Partial<Record<Intent, number>> {
     add("list", 4);
   }
   if (has(q, ["ليش", "لماذا", "سبب", "why", "نزل", "هبط", "drop"])) add("why", 3);
-  if (has(q, ["اشتري", "اطلب", "مخزون", "ينفد", "نفاد", "inventory", "stock", "reorder", "buy"])) add("buy", 4);
+  if (has(q, ["اشتري", "اطلب", "مخزون", "ينفد", "نفاد", "inventory", "stock", "reorder", "buy"]) && !isTeachingQuestion(q) && !has(q, ["مشتريات", "مورد", "purchasing"])) {
+    add("buy", 4);
+  }
   if (has(q, ["تسريب", "leak", "هامش ضعيف"])) add("leak", 4);
   if (has(q, ["صحه", "تشخيص", "health", "كيف المتجر", "حال المتجر"])) add("health", 4);
   if (has(q, ["اليوم", "ماذا افعل", "شو اعمل", "قرار اليوم", "today", "what should i do"])) add("today", 3);
@@ -88,10 +91,13 @@ function scoreIntents(q: string): Partial<Record<Intent, number>> {
   if (has(q, ["مصروف", "مصاريف", "expense", "opex", "تكاليف", "تكلفه"])) add("expenses", 3);
   if (has(q, ["كيف يحسب", "كيف تم حساب", "how is", "calculated", "يعني شو", "اشرح"])) add("how", 3);
   if (has(q, [
-    "خطه", "خطه تسويق", "تسويق", "تسويقيه", "تسويقي", "اعلان", "اعلانات", "ترويج", "سوقي",
+    "خطه", "خطه تسويق", "تسويقيه", "اعلان", "اعلانات", "ترويج", "سوقي",
     "حملات", "حمله", "marketing", "campaign", "promote", "promotion", "ads", "advertis",
   ])) {
     add("plan", 6);
+  }
+  if (has(q, ["تسويق", "تسويقي"]) && !has(q, ["خطه", "campaign", "اعلان"])) {
+    if (isTeachingQuestion(q)) add("plan", 1);
   }
   if (has(q, ["صافي الربح", "net profit"])) add("profit", 2);
   if (has(q, ["كم بعنا", "اجمالي المبيعات", "total sales"])) add("totals", 3);
@@ -341,6 +347,11 @@ export function answerMerchantQuestion(
 
   if (!q) {
     return en ? "Ask about the open file, for example: highest profit product." : "اكتب سؤالك، مثلاً: مين أعلى منتج ربح؟";
+  }
+
+  const knowledge = detectKnowledgeTopic(q);
+  if (knowledge) {
+    return answerKnowledge(knowledge, en ? "en" : "ar", result, currency);
   }
 
   let scores = scoreIntents(q);

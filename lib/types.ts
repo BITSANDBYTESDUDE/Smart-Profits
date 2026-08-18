@@ -219,6 +219,7 @@ export interface RiskAlert {
   title: string;
   message: string;
   recommendation: string;
+  value?: number;
 }
 
 export interface AiRecommendation {
@@ -392,6 +393,7 @@ export interface WhatIfResult {
   newMonthlyProfit: number;
   delta: number;
   verdict: string;
+  verdictKey: "sim.v.ok" | "sim.v.belowCost" | "sim.v.thin" | "sim.v.down" | "sim.v.raise";
 }
 
 export class FileParseError extends Error {

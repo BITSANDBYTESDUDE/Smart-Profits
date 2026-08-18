@@ -6,10 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAnalysis } from "@/context/analysis-context";
 import { useAuth } from "@/context/auth-context";
 import { trackPlatform } from "@/lib/admin/track";
+import { useAppearance } from "@/context/appearance";
 import { formatMoney } from "@/lib/format";
+import { localizeLeak } from "@/lib/localize-advisor";
 
 export function ProfitLeaks() {
   const { result, currency } = useAnalysis();
+  const { t } = useAppearance();
   const { user } = useAuth();
   const leaks = result?.advisor.leaks ?? [];
 
@@ -24,21 +27,24 @@ export function ProfitLeaks() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Search className="h-4 w-4 text-amber-300" />
-          كاشف تسريب الأرباح
+          {t("ui.leaks")}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {leaks.length === 0 && <p className="text-sm text-muted">لا يظهر تسريب واضح في هذا الملف.</p>}
-        {leaks.map((leak) => (
+        {leaks.length === 0 && <p className="text-sm text-muted">{t("ui.noLeak")}</p>}
+        {leaks.map((leak) => {
+          const copy = localizeLeak(leak, t);
+          return (
           <div key={leak.id} className="rounded-xl border border-border bg-white/3 p-4">
             <p className="text-sm font-semibold text-foreground">{leak.product}</p>
             <p className="mt-1 text-xs text-muted">
-              مبيعات {formatMoney(leak.revenue, currency)} • ربح {formatMoney(leak.profit, currency)}
+              {t("ui.sales")} {formatMoney(leak.revenue, currency)} • {t("ui.profit")} {formatMoney(leak.profit, currency)}
             </p>
-            <p className="mt-2 text-sm leading-6 text-slate-300">{leak.issue}</p>
-            <p className="mt-1 text-sm leading-6 text-accent">{leak.suggestion}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-300">{copy.issue}</p>
+            <p className="mt-1 text-sm leading-6 text-accent">{copy.suggestion}</p>
           </div>
-        ))}
+          );
+        })}
       </CardContent>
     </Card>
   );

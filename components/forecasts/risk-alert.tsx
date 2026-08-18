@@ -3,16 +3,22 @@
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { useAnalysis } from "@/context/analysis-context";
+import { useAppearance } from "@/context/appearance";
+import { formatMoney } from "@/lib/format";
+import { localizeAlert } from "@/lib/localize-advisor";
 import { cn } from "@/lib/utils";
 
 export function RiskAlertCard() {
-  const { result } = useAnalysis();
+  const { result, currency } = useAnalysis();
+  const { t } = useAppearance();
   if (!result) return null;
   const alert = result.forecast.alerts[0];
   if (!alert) return null;
 
   const high = alert.severity === "high";
   const positive = alert.severity === "positive";
+  const amount = alert.id === "loss-next-month" ? formatMoney(alert.value ?? Math.abs(result.forecast.nextMonthProfit), currency) : "";
+  const copy = localizeAlert(alert, amount, t);
 
   return (
     <Card
@@ -31,10 +37,10 @@ export function RiskAlertCard() {
         )}
         <div>
           <h3 className={cn("font-semibold", high ? "text-red-300" : positive ? "text-accent" : "text-amber-300")}>
-            {alert.title}
+            {copy.title}
           </h3>
-          <p className="mt-2 text-sm leading-7 text-slate-200">{alert.message}</p>
-          <p className="mt-2 text-sm text-slate-400">{alert.recommendation}</p>
+          <p className="mt-2 text-sm leading-7 text-slate-200">{copy.message}</p>
+          <p className="mt-2 text-sm text-slate-400">{copy.recommendation}</p>
         </div>
       </div>
     </Card>

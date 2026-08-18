@@ -48,36 +48,39 @@ export default function RegisterPage() {
   }
 
   return (
-    <AuthShell>
-      <h1 className="mt-8 text-3xl font-bold text-foreground">{t("auth.register.title")}</h1>
-      <p className="mt-2 text-sm text-muted">{t("auth.register.subtitle")}</p>
+    <AuthShell compact>
+      <h1 className="text-lg font-bold text-foreground sm:text-xl">{t("auth.register.title")}</h1>
+      <p className="mt-0.5 text-xs text-muted">{t("auth.register.subtitle")}</p>
 
-      <form className="mt-8 space-y-4" onSubmit={onSubmit}>
+      <form className="mt-3 space-y-2" onSubmit={onSubmit}>
+        <div className="grid grid-cols-2 gap-2">
         <div>
-          <Label htmlFor="fullName">{t("auth.fullName")}</Label>
+          <Label htmlFor="fullName" className="mb-0.5 text-[11px]">{t("auth.fullName")}</Label>
           <div className="relative">
-            <User className="pointer-events-none absolute end-3 top-3.5 h-4 w-4 text-slate-500" />
-            <Input id="fullName" name="fullName" placeholder={t("auth.placeholder.name")} className="pe-10" />
+            <User className="pointer-events-none absolute end-3 top-2 h-4 w-4 text-slate-500" />
+            <Input id="fullName" name="fullName" placeholder={t("auth.placeholder.name")} className="h-9 pe-10" />
           </div>
         </div>
         <div>
-          <Label htmlFor="storeName">{t("auth.storeName")}</Label>
+          <Label htmlFor="storeName" className="mb-0.5 text-[11px]">{t("auth.storeName")}</Label>
           <div className="relative">
-            <Store className="pointer-events-none absolute end-3 top-3.5 h-4 w-4 text-slate-500" />
-            <Input id="storeName" name="storeName" placeholder={t("auth.placeholder.store")} className="pe-10" />
+            <Store className="pointer-events-none absolute end-3 top-2 h-4 w-4 text-slate-500" />
+            <Input id="storeName" name="storeName" placeholder={t("auth.placeholder.store")} className="h-9 pe-10" />
+          </div>
+        </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+        <div>
+          <Label htmlFor="email" className="mb-0.5 text-[11px]">{t("auth.email")}</Label>
+          <div className="relative">
+            <Mail className="pointer-events-none absolute end-3 top-2 h-4 w-4 text-slate-500" />
+            <Input id="email" name="email" type="email" placeholder="example@gmail.com" className="h-9 pe-10" />
           </div>
         </div>
         <div>
-          <Label htmlFor="email">{t("auth.email")}</Label>
+          <Label htmlFor="phone" className="mb-0.5 text-[11px]">{t("auth.phone")}</Label>
           <div className="relative">
-            <Mail className="pointer-events-none absolute end-3 top-3.5 h-4 w-4 text-slate-500" />
-            <Input id="email" name="email" type="email" placeholder="example@gmail.com" className="pe-10" />
-          </div>
-        </div>
-        <div>
-          <Label htmlFor="phone">{t("auth.phone")}</Label>
-          <div className="relative">
-            <Phone className="pointer-events-none absolute end-3 top-3.5 h-4 w-4 text-slate-500" />
+            <Phone className="pointer-events-none absolute end-3 top-2 h-4 w-4 text-slate-500" />
             <Input
               id="phone"
               name="phone"
@@ -85,24 +88,25 @@ export default function RegisterPage() {
               inputMode="tel"
               autoComplete="tel"
               dir="ltr"
+              title={t("auth.phone.hint")}
               placeholder={t("auth.placeholder.phone")}
-              className="pe-10 text-start"
+              className="h-9 pe-10 text-start"
             />
           </div>
-          <p className="mt-1.5 text-xs leading-5 text-muted">{t("auth.phone.hint")}</p>
+        </div>
         </div>
         <div>
-          <Label htmlFor="password">{t("auth.password")}</Label>
+          <Label htmlFor="password" className="mb-0.5 text-[11px]">{t("auth.password")}</Label>
           <div className="relative">
-            <Lock className="pointer-events-none absolute end-3 top-3.5 h-4 w-4 text-slate-500" />
-            <Input id="password" name="password" type="password" placeholder="••••••••" className="pe-10" />
+            <Lock className="pointer-events-none absolute end-3 top-2 h-4 w-4 text-slate-500" />
+            <Input id="password" name="password" type="password" placeholder="••••••••" className="h-9 pe-10" />
           </div>
         </div>
 
-        <label className="flex items-start gap-2 text-sm text-muted">
+        <label className="flex items-start gap-2 text-[11px] leading-4 text-muted">
           <input
             type="checkbox"
-            className="mt-1 accent-accent"
+            className="mt-0.5 accent-accent"
             checked={accepted}
             onChange={(e) => setAccepted(e.target.checked)}
           />
@@ -112,12 +116,12 @@ export default function RegisterPage() {
           </span>
         </label>
 
-        <Button type="submit" variant="accent" size="lg" className="w-full">
+        <Button type="submit" variant="accent" className="h-9 w-full">
           {t("auth.create")}
         </Button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-muted">
+      <p className="mt-2 text-center text-[11px] text-muted">
         {t("auth.hasAccount")}{" "}
         <Link href="/login" className="text-accent hover:underline">
           {t("auth.login.title")}

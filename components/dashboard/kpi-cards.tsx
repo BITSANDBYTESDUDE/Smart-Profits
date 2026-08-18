@@ -6,7 +6,17 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAnalysis } from "@/context/analysis-context";
 import { formatMoney, formatPct } from "@/lib/format";
+import { useAppearance } from "@/context/appearance";
 import { cn } from "@/lib/utils";
+
+function healthKey(label: string) {
+  if (label === "ممتاز") return "kpi.health.excellent";
+  if (label === "جيد جداً") return "kpi.health.vgood";
+  if (label === "متوسط") return "kpi.health.ok";
+  if (label === "ضعيف") return "kpi.health.weak";
+  if (label === "حرج") return "kpi.health.critical";
+  return "";
+}
 
 function Trend({ value }: { value: number }) {
   const positive = value >= 0;
@@ -51,32 +61,34 @@ export function HealthRing({ score, label }: { score: number; label: string }) {
 
 export function KpiCards() {
   const { result, currency } = useAnalysis();
+  const { t } = useAppearance();
   const [open, setOpen] = useState<"revenue" | "expenses" | "profit" | null>(null);
   if (!result) return null;
   const { kpis } = result;
+  const health = healthKey(kpis.healthLabel) ? t(healthKey(kpis.healthLabel)) : kpis.healthLabel;
 
   const items = [
     {
       key: "revenue" as const,
-      title: "إجمالي المبيعات",
+      title: t("kpi.sales"),
       value: formatMoney(kpis.totalRevenue, currency),
-      hint: "اضغط لمعرفة المصدر",
+      hint: t("kpi.salesHint"),
       trend: kpis.revenueChangePct,
       icon: Wallet,
     },
     {
       key: "expenses" as const,
-      title: "إجمالي المصروفات",
+      title: t("kpi.exp"),
       value: formatMoney(kpis.totalExpenses, currency),
-      hint: "تكلفة + تشغيل",
+      hint: t("kpi.expHint"),
       trend: kpis.expenseChangePct,
       icon: Receipt,
     },
     {
       key: "profit" as const,
-      title: "صافي الربح",
+      title: t("kpi.profit"),
       value: formatMoney(kpis.netProfit, currency),
-      hint: `هامش ${kpis.profitMargin.toFixed(1)}% — اضغط للتفسير`,
+      hint: t("kpi.profitHint").replace("{n}", kpis.profitMargin.toFixed(1)),
       trend: kpis.profitChangePct,
       icon: TrendingUp,
     },
@@ -87,11 +99,11 @@ export function KpiCards() {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Card className="flex items-center justify-between p-5">
           <div>
-            <p className="text-sm text-muted">مؤشر صحة المتجر</p>
+            <p className="text-sm text-muted">{t("kpi.health")}</p>
             <p className="mt-2 text-3xl font-bold text-foreground">{kpis.healthScore}</p>
-            <p className="mt-1 text-sm text-accent">{kpis.healthLabel}</p>
+            <p className="mt-1 text-sm text-accent">{health}</p>
           </div>
-          <HealthRing score={kpis.healthScore} label={kpis.healthLabel} />
+          <HealthRing score={kpis.healthScore} label={health} />
         </Card>
 
         {items.map((item) => {
@@ -121,28 +133,24 @@ export function KpiCards() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setOpen(null)}>
           <Card className="w-full max-w-md p-5" onClick={(event) => event.stopPropagation()}>
             <div className="mb-3 flex items-center justify-between">
-              <p className="font-semibold text-foreground">كيف وصلنا لهذا الرقم؟</p>
+              <p className="font-semibold text-foreground">{t("kpi.how")}</p>
               <Button size="icon" variant="ghost" onClick={() => setOpen(null)}>
                 <X />
               </Button>
             </div>
             <div className="space-y-2 font-mono text-sm text-slate-200">
-              <p className="flex justify-between"><span>المبيعات</span><span>{formatMoney(kpis.totalRevenue, currency)}</span></p>
-              <p className="flex justify-between"><span>- تكلفة المبيعات / خامات</span><span>{formatMoney(kpis.totalCogs, currency)}</span></p>
-              <p className="flex justify-between"><span>- تشغيل</span><span>{formatMoney(kpis.totalOpex, currency)}</span></p>
-              <p className="flex justify-between"><span>- رواتب من الملف</span><span>{formatMoney(kpis.totalSalaries, currency)}</span></p>
-              <p className="flex justify-between"><span>- تالف وهالك</span><span>{formatMoney(kpis.totalWaste, currency)}</span></p>
+              <p className="flex justify-between"><span>{t("kpi.sales")}</span><span>{formatMoney(kpis.totalRevenue, currency)}</span></p>
+              <p className="flex justify-between"><span>- {t("kpi.cogs")}</span><span>{formatMoney(kpis.totalCogs, currency)}</span></p>
+              <p className="flex justify-between"><span>- {t("kpi.opex")}</span><span>{formatMoney(kpis.totalOpex, currency)}</span></p>
+              <p className="flex justify-between"><span>- {t("kpi.salariesFile")}</span><span>{formatMoney(kpis.totalSalaries, currency)}</span></p>
+              <p className="flex justify-between"><span>- {t("kpi.waste")}</span><span>{formatMoney(kpis.totalWaste, currency)}</span></p>
               <p className="border-t border-border pt-2 flex justify-between text-accent">
-                <span>صافي الربح</span>
+                <span>{t("kpi.profit")}</span>
                 <span>{formatMoney(kpis.netProfit, currency)}</span>
               </p>
             </div>
             <p className="mt-3 text-sm leading-7 text-slate-300">
-              {open === "profit"
-                ? "صافي الربح = المبيعات فقط − (خامات + تشغيل + رواتب + تالف). الإيجار والرواتب في الإعدادات تُضاف إن لم تكن داخل الملف. بنود مثل الإيجار والكهرباء لا تُحسب مبيعات."
-                : open === "expenses"
-                  ? "المصروف يجمع تكلفة المبيعات/الخامات + التشغيل + الرواتب + التالف، عبر كل أشهر الملف."
-                  : "المبيعات تُحسب فقط من الصفوف المصنّفة إيراد/بيع بالعربي أو الإنجليزي. المصروف والرواتب لا تدخل هنا."}
+              {open === "profit" ? t("kpi.explain.profit") : open === "expenses" ? t("kpi.explain.exp") : t("kpi.explain.sales")}
             </p>
           </Card>
         </div>

@@ -52,11 +52,21 @@ export function simulateWhatIf(item: ProductPerformance, newPrice: number, days:
   const newMonthlyProfit = round2(newUnitProfit * monthlyQty);
   const delta = round2(newMonthlyProfit - currentMonthlyProfit);
   const margin = safeDivide(newUnitProfit, newPrice) * 100;
+  let verdictKey: WhatIfResult["verdictKey"] = "sim.v.ok";
   let verdict = "التعديل يحسّن الربح دون أن يحوّل المنتج إلى خسارة.";
-  if (newPrice <= cost) verdict = "السعر الجديد أقل من التكلفة. هذا الخصم سيأكل هامش الربح.";
-  else if (margin < 15) verdict = "الهامش أصبح ضعيفاً. الخصم أو السعر الجديد قد لا يستحق الحجم الإضافي.";
-  else if (delta < 0) verdict = "الربح الشهري المتوقع ينخفض. لا تنفّذ هذا التعديل إلا إذا زاد الطلب بقوة.";
-  else if (newPrice > currentPrice * 1.12) verdict = "الرفع كبير. راقب الطلب؛ لا ترفع أكثر إذا بدأ الحجم بالانخفاض.";
+  if (newPrice <= cost) {
+    verdictKey = "sim.v.belowCost";
+    verdict = "السعر الجديد أقل من التكلفة. هذا الخصم سيأكل هامش الربح.";
+  } else if (margin < 15) {
+    verdictKey = "sim.v.thin";
+    verdict = "الهامش أصبح ضعيفاً. الخصم أو السعر الجديد قد لا يستحق الحجم الإضافي.";
+  } else if (delta < 0) {
+    verdictKey = "sim.v.down";
+    verdict = "الربح الشهري المتوقع ينخفض. لا تنفّذ هذا التعديل إلا إذا زاد الطلب بقوة.";
+  } else if (newPrice > currentPrice * 1.12) {
+    verdictKey = "sim.v.raise";
+    verdict = "الرفع كبير. راقب الطلب؛ لا ترفع أكثر إذا بدأ الحجم بالانخفاض.";
+  }
 
   return {
     product: item.name,
@@ -69,6 +79,7 @@ export function simulateWhatIf(item: ProductPerformance, newPrice: number, days:
     newMonthlyProfit,
     delta,
     verdict,
+    verdictKey,
   };
 }
 
