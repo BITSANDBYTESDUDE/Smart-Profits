@@ -31,7 +31,7 @@ export function AdminSidebar() {
 
   return (
     <aside className="sticky top-0 flex h-screen w-[300px] shrink-0 flex-col overflow-y-auto border-e border-border bg-card px-4 py-5">
-      <Logo size="md" tagline={t("admin.tagline")} />
+      <Logo size="sm" tagline={t("admin.tagline")} />
       <p className="mt-3 text-[11px] leading-5 text-muted">{t("admin.watch")}</p>
       <div className="mt-4">
         <AppearanceToggles />

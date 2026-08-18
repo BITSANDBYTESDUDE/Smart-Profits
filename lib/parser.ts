@@ -1,7 +1,9 @@
 import { z } from "zod";
 import { detectColumns, isUnspecifiedProduct } from "./mapping";
+import { applyFinancialClassification } from "./classify";
 import type { ParseResult, SheetScan, Transaction } from "./types";
 import { FileParseError } from "./types";
+import { isPlausibleBusinessDate } from "./dates";
 import { classifySheetName, dateFromSheetName, objectsFromSheet } from "./sheets";
 
 const MAX_FILE_BYTES = 50 * 1024 * 1024;
@@ -77,24 +79,51 @@ export function parseNumber(value: unknown): number {
   return negative ? -Math.abs(parsed) : parsed;
 }
 
-export function parseDate(value: unknown): Date | null {
-  if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
-  if (typeof value === "number" && Number.isFinite(value)) {
-    if (value > 20000 && value < 80000) {
-      const excelEpoch = Date.UTC(1899, 11, 30);
-      const date = new Date(excelEpoch + value * 86400000);
-      return Number.isNaN(date.getTime()) ? null : date;
+function dateFromNumber(value: number): Date | null {
+  if (value >= 36526 && value <= 73050) {
+    const excelEpoch = Date.UTC(1899, 11, 30);
+    return new Date(excelEpoch + value * 86400000);
+  }
+  if (value >= 946684800000 && value <= 4102444800000) return new Date(value);
+  if (value >= 946684800 && value <= 4102444800) return new Date(value * 1000);
+  if (value >= 20000101 && value <= 21001231) {
+    const text = String(Math.trunc(value));
+    if (text.length === 8) {
+      const year = Number(text.slice(0, 4));
+      const month = Number(text.slice(4, 6)) - 1;
+      const day = Number(text.slice(6, 8));
+      const date = new Date(year, month, day);
+      if (date.getFullYear() === year && date.getMonth() === month && date.getDate() === day) {
+        return date;
+      }
     }
-    const fromTs = new Date(value);
-    return Number.isNaN(fromTs.getTime()) ? null : fromTs;
+  }
+  return null;
+}
+
+export function parseDate(value: unknown): Date | null {
+  if (value instanceof Date) {
+    return isPlausibleBusinessDate(value) ? value : null;
+  }
+  if (typeof value === "number" && Number.isFinite(value)) {
+    const fromNumber = dateFromNumber(value);
+    return isPlausibleBusinessDate(fromNumber) ? fromNumber : null;
   }
 
   if (typeof value !== "string") return null;
   const raw = toAsciiDigits(value.trim());
   if (!raw) return null;
 
+  const asNumber = Number(raw);
+  if (raw !== "" && Number.isFinite(asNumber) && /^-?\d+(\.\d+)?$/.test(raw)) {
+    const fromNumber = dateFromNumber(asNumber);
+    if (isPlausibleBusinessDate(fromNumber)) return fromNumber;
+  }
+
   const iso = new Date(raw);
-  if (!Number.isNaN(iso.getTime()) && /\d{4}/.test(raw)) return iso;
+  if (!Number.isNaN(iso.getTime()) && /\d{4}/.test(raw) && isPlausibleBusinessDate(iso)) {
+    return iso;
+  }
 
   const dmy = raw.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})$/);
   if (dmy) {
@@ -105,7 +134,12 @@ export function parseDate(value: unknown): Date | null {
     const day = second > 12 ? second : first;
     const month = (second > 12 ? first : first > 12 ? second : second) - 1;
     const date = new Date(year, month, day);
-    if (!Number.isNaN(date.getTime()) && date.getMonth() === month && date.getDate() === day) {
+    if (
+      !Number.isNaN(date.getTime()) &&
+      date.getMonth() === month &&
+      date.getDate() === day &&
+      isPlausibleBusinessDate(date)
+    ) {
       return date;
     }
   }
@@ -117,7 +151,8 @@ export function parseDate(value: unknown): Date | null {
       const dayMatch = raw.match(/\b(\d{1,2})\b/);
       const year = yearMatch ? Number(yearMatch[0]) : new Date().getFullYear();
       const day = dayMatch ? Number(dayMatch[1]) : 1;
-      return new Date(year, month, day);
+      const date = new Date(year, month, day);
+      return isPlausibleBusinessDate(date) ? date : null;
     }
   }
   for (const [name, month] of Object.entries(ENGLISH_MONTHS)) {
@@ -126,7 +161,8 @@ export function parseDate(value: unknown): Date | null {
       const dayMatch = raw.match(/\b(\d{1,2})\b/);
       const year = yearMatch ? Number(yearMatch[0]) : new Date().getFullYear();
       const day = dayMatch ? Number(dayMatch[1]) : 1;
-      return new Date(year, month, day);
+      const date = new Date(year, month, day);
+      return isPlausibleBusinessDate(date) ? date : null;
     }
   }
 
@@ -146,6 +182,12 @@ const TransactionSchema = z.object({
   expenseType: z.string(),
   notes: z.string(),
   sourceSheet: z.string().optional(),
+  bucket: z.enum(["revenue", "opex", "salaries", "cogs", "waste"]).optional(),
+  originalAmount: z.number().optional(),
+  confidence: z.number().optional(),
+  needsReview: z.boolean().optional(),
+  classifyTerm: z.string().optional(),
+  classifyTermKey: z.string().optional(),
 });
 
 function isEmptyRow(row: Record<string, unknown>) {
@@ -155,8 +197,9 @@ function isEmptyRow(row: Record<string, unknown>) {
 }
 
 function looksLikeLineTotals(transactions: Transaction[]) {
+  const sales = transactions.filter((tx) => (tx.bucket ?? "revenue") === "revenue");
   const byProduct = new Map<string, Transaction[]>();
-  for (const tx of transactions) {
+  for (const tx of sales) {
     if (!tx.product || tx.quantity <= 0) continue;
     const list = byProduct.get(tx.product) ?? [];
     list.push(tx);
@@ -306,15 +349,21 @@ function rowsFromObjects(
       continue;
     }
 
-    const stamp = `${parsed.data.date?.toISOString() ?? ""}|${parsed.data.product}|${parsed.data.quantity}|${parsed.data.sellingPrice}|${parsed.data.costPrice}`;
+    const classified = applyFinancialClassification(parsed.data);
+    if (classified.revenue === 0 && classified.expense === 0 && classified.costPrice === 0) {
+      skippedRows += 1;
+      continue;
+    }
+
+    const stamp = `${classified.date?.toISOString() ?? ""}|${classified.product}|${classified.quantity}|${classified.sellingPrice}|${classified.costPrice}|${classified.bucket ?? ""}`;
     if (seen.has(stamp)) {
       duplicatesRemoved += 1;
       continue;
     }
     seen.add(stamp);
-    if (!parsed.data.date || isUnspecifiedProduct(parsed.data.product)) reviewNeeded += 1;
+    if (!classified.date || isUnspecifiedProduct(classified.product)) reviewNeeded += 1;
 
-    transactions.push(parsed.data);
+    transactions.push(classified);
   }
 
   if (transactions.length === 0) {

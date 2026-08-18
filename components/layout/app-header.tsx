@@ -7,6 +7,8 @@ import { PageFlow } from "@/components/layout/page-flow";
 import { useAnalysis } from "@/context/analysis-context";
 import { useAppearance } from "@/context/appearance";
 import { useAuth } from "@/context/auth-context";
+import { monthKey } from "@/lib/format";
+import { filterTransactions, uniqueProducts } from "@/lib/scope";
 import type { CurrencyCode } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +33,9 @@ export function AppHeader({
     files,
     activeFileId,
     selectFile,
+    scope,
+    setScope,
+    clearScope,
   } = useAnalysis();
   const router = useRouter();
   const latest = result?.monthlySeries.at(-1);
@@ -39,7 +44,33 @@ export function AppHeader({
   const description = subtitle ?? t("header.overview");
   const initial = (user?.fullName || settings.ownerName || "S").slice(0, 1);
   const hasHighAlert = Boolean(result?.forecast.alerts.some((alert) => alert.severity === "high"));
-  const dateLabel = latest ? `${months[latest.month]} ${latest.year}` : "—";
+  const monthOptions = Array.from(
+    new Map(
+      (parseResult?.transactions ?? [])
+        .filter((tx) => tx.date)
+        .map((tx) => {
+          const key = monthKey(tx.date!.getFullYear(), tx.date!.getMonth());
+          return [key, { key, month: tx.date!.getMonth(), year: tx.date!.getFullYear() }] as const;
+        }),
+    ).values(),
+  ).sort((a, b) => a.key.localeCompare(b.key));
+  const selectedMonth = monthOptions.find((option) => option.key === scope.monthKey);
+  const dateLabel = selectedMonth
+    ? `${months[selectedMonth.month]} ${selectedMonth.year}`
+    : latest
+      ? `${months[latest.month]} ${latest.year}`
+      : "—";
+  const monthScopedRows = filterTransactions(parseResult?.transactions ?? [], {
+    monthKey: scope.monthKey,
+    sheet: scope.sheet,
+    product: null,
+  });
+  const productOptions = uniqueProducts(monthScopedRows.length ? monthScopedRows : parseResult?.transactions ?? []);
+  if (scope.product && !productOptions.includes(scope.product)) productOptions.unshift(scope.product);
+  const scopeParts = [
+    selectedMonth ? `${months[selectedMonth.month]} ${selectedMonth.year}` : scope.sheet,
+    scope.product,
+  ].filter(Boolean);
 
   return (
     <header className="flex flex-col gap-3 border-b border-border px-6 py-4">
@@ -50,6 +81,13 @@ export function AppHeader({
             {description}
             {parseResult ? ` • ${t("header.currentFile")}: ${parseResult.fileName}` : ""}
           </p>
+          {scopeParts.length > 0 ? (
+            <p className="mt-1 text-xs text-accent">
+              {t("scope.viewing")}: {scopeParts.join(" • ")}
+            </p>
+          ) : parseResult ? (
+            <p className="mt-1 text-xs text-muted">{t("scope.hint")}</p>
+          ) : null}
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -87,9 +125,58 @@ export function AppHeader({
             ))}
           </div>
 
+          {monthOptions.length > 1 && (
+            <select
+              aria-label={t("scope.month")}
+              className="h-10 max-w-[170px] rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none"
+              value={scope.monthKey ?? ""}
+              onChange={(event) => {
+                const value = event.target.value;
+                setScope({ monthKey: value || null, sheet: null });
+              }}
+            >
+              <option value="" className="bg-card text-foreground">
+                {t("scope.allMonths")}
+              </option>
+              {monthOptions.map((option) => (
+                <option key={option.key} value={option.key} className="bg-card text-foreground">
+                  {months[option.month]} {option.year}
+                </option>
+              ))}
+            </select>
+          )}
+
+          {productOptions.length > 1 && (
+            <select
+              aria-label={t("scope.product")}
+              className="h-10 max-w-[200px] truncate rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none"
+              value={scope.product ?? ""}
+              onChange={(event) => setScope({ product: event.target.value || null })}
+            >
+              <option value="" className="bg-card text-foreground">
+                {t("scope.allProducts")}
+              </option>
+              {productOptions.map((name) => (
+                <option key={name} value={name} className="bg-card text-foreground">
+                  {name}
+                </option>
+              ))}
+            </select>
+          )}
+
+          {(scope.monthKey || scope.product || scope.sheet) && (
+            <Button variant="ghost" size="sm" onClick={clearScope}>
+              {t("scope.clear")}
+            </Button>
+          )}
+
           <div className="hidden items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-sm text-muted md:flex">
             <CalendarDays className="h-4 w-4" />
-            {dateLabel}
+            {scope.monthKey
+              ? dateLabel
+              : monthOptions.length > 1
+                ? t("scope.allMonths")
+                : dateLabel}
           </div>
 
           <button

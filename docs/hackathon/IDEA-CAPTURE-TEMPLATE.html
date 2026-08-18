@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Smart Profits — Idea Capture Template | GSMA MENA Ignite</title>
+  <style>
+    :root {
+      --navy: #0b1120;
+      --cyan: #0f9e94;
+      --gold: #c4a035;
+      --muted: #5b6b80;
+      --line: #d8e0ea;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0 auto;
+      max-width: 860px;
+      padding: 40px 36px 72px;
+      font-family: "Segoe UI", "IBM Plex Sans", Arial, sans-serif;
+      color: var(--navy);
+      line-height: 1.55;
+      background: #fff;
+    }
+    .banner {
+      border-top: 6px solid var(--cyan);
+      border-bottom: 1px solid var(--line);
+      padding: 8px 0 20px;
+      margin-bottom: 28px;
+    }
+    .kicker { color: var(--cyan); font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+    h1 { font-size: 26px; margin: 8px 0 6px; line-height: 1.25; }
+    .sub { color: var(--muted); font-size: 14px; }
+    h2 { font-size: 16px; margin: 28px 0 10px; color: var(--navy); border-left: 4px solid var(--gold); padding-left: 10px; }
+    h3 { font-size: 14px; margin: 16px 0 8px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 10px 0 16px; }
+    th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+    th { background: #f3f6fb; width: 28%; }
+    .box { background: #f3f6fb; border: 1px solid var(--line); padding: 12px 14px; font-size: 13px; margin: 12px 0; }
+    .ok { border-left: 4px solid var(--cyan); }
+    ul { margin: 8px 0 12px; padding-left: 20px; }
+    li { margin: 4px 0; }
+    pre {
+      background: #0b1120;
+      color: #e8eef6;
+      font-size: 11px;
+      padding: 14px;
+      overflow: auto;
+      line-height: 1.4;
+    }
+    .footer { margin-top: 36px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px; }
+    @media print {
+      body { padding: 16px 20px; }
+      pre { white-space: pre-wrap; }
+    }
+  </style>
+</head>
+<body>
+  <div class="banner">
+    <div class="kicker">GSMA MENA Ignite · Nokia Network-as-Code · Phase 1 Idea Submission</div>
+    <h1>Smart Profits: AI-Driven Financial Analytics &amp; Telco-Secured Merchant Platform</h1>
+    <p class="sub">Idea Capture Template · Theme 4: Secure FinTech, Payments &amp; Anti-Fraud Innovation · Deadline 23 August 2026</p>
+  </div>
+
+  <h2>1. Project identity</h2>
+  <table>
+    <tr><th>Project name</th><td>Smart Profits: AI-Driven Financial Analytics &amp; Telco-Secured Merchant Platform</td></tr>
+    <tr><th>One-line pitch</th><td>A merchant AI advisor that turns messy Excel/CSV into profit decisions, protected by 4G/5G network intelligence so stolen SIMs and unusual locations cannot open or upload the store’s financial files.</td></tr>
+    <tr><th>Theme</th><td><strong>Theme 4 — Secure FinTech, Payments &amp; Anti-Fraud Innovation</strong></td></tr>
+    <tr><th>Team / contact</th><td>Smart Profits Team — MENA &nbsp; | &nbsp; Name: ________ &nbsp; Email: ________ &nbsp; Country: ________</td></tr>
+    <tr><th>Languages</th><td>Arabic + English (RTL / LTR)</td></tr>
+  </table>
+
+  <h2>2. Mandatory requirements (both used)</h2>
+  <div class="box ok">
+    <strong>This idea satisfies both compulsory hackathon conditions by design.</strong>
+    <ol>
+      <li><strong>Network APIs:</strong> GSMA Open Gateway <strong>CAMARA APIs</strong> consumed exclusively through the <strong>Nokia Network-as-Code</strong> platform (SIM Swap, Number Verification, Location Verification, Device Status).</li>
+      <li><strong>AI Agent layer:</strong> the <strong>Smart Guard &amp; Financial Agent</strong> orchestrates those APIs, combines them with financial context, and <em>takes</em> allow / step-up / freeze decisions — it is not a chatbot that only comments on Excel.</li>
+    </ol>
+  </div>
+
+  <h2>3. Problem</h2>
+  <p>MENA merchants run the business from messy Excel, CSV, PDF and phone photos. They have no CFO and no bank SOC. The same login that diagnoses profit is the login that can leak the entire P&amp;L after a <strong>SIM swap</strong> or a session from another country. Banks already buy network APIs. The SaaS that holds the merchant’s books usually does not.</p>
+
+  <h2>4. Solution</h2>
+  <p><strong>Smart Profits</strong> is a bilingual merchant platform that cleans messy ledgers, diagnoses store health and profit leaks, answers questions from the <em>currently open file</em>, and protects that data with telco-grade identity and location. The <strong>Smart Guard AI Agent</strong> is a continuous security-and-finance agent: it analyses sales <em>and</em> watches network intelligence, then freezes sensitive uploads when the SIM or location is not trusted.</p>
+
+  <h2>5. CAMARA APIs via Nokia Network-as-Code</h2>
+  <table>
+    <tr><th>API</th><th>Trigger</th><th>Agent decision</th></tr>
+    <tr><td>SIM Swap</td><td>Login, password reset, price change, payout / sensitive settings</td><td>Recent swap → do not trust SMS OTP; freeze session</td></tr>
+    <tr><td>Number Verification</td><td>Login and step-up (silent 4G/5G, no SMS)</td><td>Confirm the live network number matches the merchant</td></tr>
+    <tr><td>Location Verification</td><td>Financial file upload and report export</td><td>Must match usual store/branch area or upload is blocked</td></tr>
+    <tr><td>Device Status</td><td>Same sensitive actions</td><td>Device reachable / normal before allowing the action</td></tr>
+  </table>
+  <p>All calls go through <strong>Nokia Network-as-Code</strong> (single developer access across operator CAMARA implementations). The product does not integrate operators one-by-one.</p>
+
+  <h2>6. AI Agent orchestration</h2>
+  <pre>Merchant action (login / upload / export / price change)
+  → Smart Guard Agent
+     → Nokia NaC: SIM Swap + Number Verification + Location Verification + Device Status
+     → Risk policy: ALLOW | STEP-UP | FREEZE
+  → If FREEZE: block financial upload/export until network identity is confirmed</pre>
+  <p>Example: if SIM Swap is recent <em>or</em> Location Verification is outside the store during an Excel upload, the agent <strong>does not ingest the workbook</strong>. Sensitive financial data stays off the platform until Number Verification succeeds on the trusted line.</p>
+
+  <h2>7. Technical architecture</h2>
+  <table>
+    <tr><th>Front-end</th><td>Next.js / TypeScript · Arabic RTL + English · dark/light</td></tr>
+    <tr><th>Back-end</th><td>Next.js API · <strong>PostgreSQL</strong> (users, stores, files, risk events)</td></tr>
+    <tr><th>Financial AI</th><td>Messy-file parser, P&amp;L / leaks / forecast, file-grounded advisor Q&amp;A</td></tr>
+    <tr><th>AI Agent</th><td>Smart Guard — tool-calling loop over CAMARA + finance context</td></tr>
+    <tr><th>Network layer</th><td><strong>Nokia Network-as-Code · GSMA CAMARA</strong> · 4G/5G</td></tr>
+  </table>
+
+  <h2>8. Demo journeys</h2>
+  <ul>
+    <li><strong>Trusted merchant:</strong> clean SIM, verified number, location = store → analyse Excel → “highest profit product” from that file.</li>
+    <li><strong>SIM-swap fraud:</strong> attacker with a new SIM → freeze → no P&amp;L download.</li>
+    <li><strong>Strange location upload:</strong> file push outside branch geofence → Location Verification fail → upload blocked, explained in AR/EN.</li>
+  </ul>
+
+  <h2>9. Why this wins Theme 4</h2>
+  <p>It is not a generic Excel copilot. It is a <strong>FinTech control plane for SMEs</strong> that spends CAMARA APIs the way a bank would: on identity, SIM integrity, and location — applied to the merchant’s own books, in Arabic, on 5G/4G. That is the GSMA + Nokia evaluation target: real regional fraud + programmable networks + an agent that decides, not a slide that lists APIs.</p>
+
+  <h2>10. Declaration</h2>
+  <div class="box ok">
+    This submission <strong>uses GSMA CAMARA network APIs through Nokia Network-as-Code</strong> and <strong>uses an AI Agent to orchestrate those APIs and take security decisions</strong>. Both mandatory hackathon requirements are met.
+  </div>
+
+  <p class="footer">Smart Profits · Idea Capture · Theme 4 Secure FinTech · Phase 1 · August 2026 · Fill team name and email before upload.</p>
+</body>
+</html>

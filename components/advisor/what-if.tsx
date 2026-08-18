@@ -7,11 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAnalysis } from "@/context/analysis-context";
+import { useSmartGuard } from "@/context/smart-guard-context";
 import { dataSpanDays, simulateWhatIf } from "@/lib/advisor";
 import { formatMoney } from "@/lib/format";
+import { GuardBlockedError } from "@/lib/smart-guard/client";
+import { toast } from "sonner";
 
 export function WhatIfSimulator() {
   const { result, parseResult, currency } = useAnalysis();
+  const { protect } = useSmartGuard();
   const catalog = result?.productHighlights.catalog ?? [];
   const [product, setProduct] = useState(catalog[0]?.name ?? "");
   const [mode, setMode] = useState<"price" | "discount">("price");
@@ -106,9 +110,26 @@ export function WhatIfSimulator() {
           </div>
         </div>
         <p className="text-sm leading-7 text-slate-200">{simulation.verdict}</p>
+        <div className="flex flex-wrap gap-2">
         <Button variant="outline" onClick={() => setPrice(simulation.currentPrice)}>
           إعادة السعر الحالي
         </Button>
+        <Button
+          onClick={() => {
+            void (async () => {
+              try {
+                await protect("price_change");
+                toast.success("Smart Guard سمح بتغيير السعر.");
+              } catch (error) {
+                if (error instanceof GuardBlockedError) return;
+                toast.error("تعذر تطبيق تغيير السعر.");
+              }
+            })();
+          }}
+        >
+          تطبيق تغيير السعر
+        </Button>
+        </div>
       </CardContent>
     </Card>
   );

@@ -63,6 +63,7 @@ export function generateDemoTransactions(seed = 42): Transaction[] {
           category: product.category,
           expenseType: "",
           notes: "",
+          bucket: "revenue",
         });
       }
     }
@@ -80,6 +81,7 @@ export function generateDemoTransactions(seed = 42): Transaction[] {
       category: "شحن",
       expenseType: "شحن",
       notes: "",
+      bucket: "opex",
     });
 
     transactions.push({
@@ -94,6 +96,7 @@ export function generateDemoTransactions(seed = 42): Transaction[] {
       category: "تسويق",
       expenseType: "تسويق",
       notes: "",
+      bucket: "opex",
     });
   }
 

@@ -5,11 +5,14 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAnalysis } from "@/context/analysis-context";
+import { useSmartGuard } from "@/context/smart-guard-context";
 import { cn } from "@/lib/utils";
+import { GuardBlockedError } from "@/lib/smart-guard/client";
 import { toast } from "sonner";
 
 export function Recommendations() {
   const { result, applyRecommendation, actionLog, activeFileId } = useAnalysis();
+  const { protect } = useSmartGuard();
   const router = useRouter();
   if (!result) return null;
 
@@ -43,13 +46,20 @@ export function Recommendations() {
                 variant={alreadyLogged ? "outline" : rec.tone === "positive" ? "accent" : "default"}
                 className="mt-3"
                 onClick={() => {
-                  applyRecommendation(rec);
-                  toast.success(
-                    alreadyLogged
-                      ? "هذه التوصية موجودة مسبقاً في سجل الإجراءات."
-                      : "تم تسجيل التوصية في سجل الإجراءات.",
-                  );
-                  router.push("/settings?tab=actions");
+                  void (async () => {
+                    try {
+                      await protect("price_change");
+                      applyRecommendation(rec);
+                      toast.success(
+                        alreadyLogged
+                          ? "هذه التوصية موجودة مسبقاً في سجل الإجراءات."
+                          : "تم تسجيل التوصية في سجل الإجراءات.",
+                      );
+                      router.push("/settings?tab=actions");
+                    } catch (error) {
+                      if (error instanceof GuardBlockedError) return;
+                    }
+                  })();
                 }}
               >
                 {alreadyLogged ? "عرض في السجل" : rec.actionLabel}

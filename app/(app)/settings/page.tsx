@@ -13,9 +13,15 @@ import { Label } from "@/components/ui/label";
 import { SectionTabs } from "@/components/ui/section-tabs";
 import { useAnalysis } from "@/context/analysis-context";
 import { useAppearance } from "@/context/appearance";
+import { useAuth } from "@/context/auth-context";
+import { useSmartGuard } from "@/context/smart-guard-context";
 import { exportMonthlyReport } from "@/lib/export-report";
 import { formatMoney } from "@/lib/format";
+import { normalizeMobile } from "@/lib/phone";
+import { GuardBlockedError } from "@/lib/smart-guard/client";
 import type { AppSettings, CurrencyCode } from "@/lib/types";
+import { SmartGuardDemoPanel } from "@/components/guard/smart-guard-demo-panel";
+import { SmartGuardLogPanel } from "@/components/guard/smart-guard-log-panel";
 
 function SettingsPageInner() {
   const router = useRouter();
@@ -24,7 +30,12 @@ function SettingsPageInner() {
   const requested = searchParams.get("tab");
   const tab = requested === "actions" || requested === "reports" ? requested : "store";
   const { settings, saveSettings, result, currency, parseResult } = useAnalysis();
+  const { user, updateProfile } = useAuth();
+  const { protect, pending } = useSmartGuard();
   const [form, setForm] = useState<AppSettings>(settings);
+  const [phone, setPhone] = useState(user?.phone ?? "");
+  const [storeLat, setStoreLat] = useState("");
+  const [storeLng, setStoreLng] = useState("");
   const tabs = [
     { id: "store", label: t("settings.tab.store") },
     { id: "actions", label: t("settings.tab.actions") },
@@ -34,6 +45,21 @@ function SettingsPageInner() {
   useEffect(() => {
     setForm(settings);
   }, [settings]);
+
+  useEffect(() => {
+    setPhone(user?.phone ?? "");
+  }, [user?.phone]);
+
+  useEffect(() => {
+    if (!user?.email) return;
+    fetch(`/api/auth/profile?email=${encodeURIComponent(user.email)}`)
+      .then((res) => res.json())
+      .then((data: { homeLat?: number | null; homeLng?: number | null }) => {
+        if (typeof data.homeLat === "number") setStoreLat(String(data.homeLat));
+        if (typeof data.homeLng === "number") setStoreLng(String(data.homeLng));
+      })
+      .catch(() => undefined);
+  }, [user?.email]);
 
   const reports = useMemo(() => {
     return (result?.monthlySeries ?? [])
@@ -50,17 +76,44 @@ function SettingsPageInner() {
     router.replace(id === "store" ? "/settings" : `/settings?tab=${id}`);
   }
 
-  function save() {
+  async function save() {
+    const normalized = normalizeMobile(phone);
+    if (!normalized) {
+      toast.error(t("settings.phone.invalid"));
+      return;
+    }
+    const ok = await updateProfile({ phone: normalized, storeName: form.storeName });
+    if (!ok) {
+      toast.error(t("settings.phone.taken"));
+      return;
+    }
+    const lat = Number(storeLat);
+    const lng = Number(storeLng);
+    if (storeLat && storeLng && Number.isFinite(lat) && Number.isFinite(lng)) {
+      await fetch("/api/auth/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: user?.email,
+          phone: normalized,
+          storeName: form.storeName,
+          homeLat: lat,
+          homeLng: lng,
+        }),
+      }).catch(() => undefined);
+    }
+    setPhone(normalized);
     saveSettings({ ...form, opexSetupCompleted: true });
     toast.success(t("settings.saved"));
   }
 
-  function exportReport(monthKey: string, mode: "html" | "pdf", scope: "month" | "all" = "month") {
+  async function exportReport(monthKey: string, mode: "html" | "pdf", scope: "month" | "all" = "month") {
     if (!result || !parseResult) {
       toast.error(t("settings.needFile"));
       return;
     }
     try {
+      await protect("report_export");
       exportMonthlyReport(
         {
           monthKey,
@@ -75,6 +128,7 @@ function SettingsPageInner() {
       );
       toast.success(mode === "pdf" ? t("settings.pdfOk") : t("settings.htmlOk"));
     } catch (error) {
+      if (error instanceof GuardBlockedError) return;
       toast.error(error instanceof Error ? error.message : t("settings.exportFail"));
     }
   }
@@ -91,6 +145,74 @@ function SettingsPageInner() {
               <CardTitle>{t("settings.account")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
+              <div>
+                <h3 className="mb-3 text-sm font-semibold text-foreground">{t("settings.profile")}</h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <Label>{t("settings.email")}</Label>
+                    <Input value={user?.email ?? ""} readOnly dir="ltr" className="text-start text-muted" />
+                  </div>
+                  <div>
+                    <Label>{t("settings.phone")}</Label>
+                    <Input
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
+                      dir="ltr"
+                      placeholder={t("auth.placeholder.phone")}
+                      className="text-start"
+                    />
+                    <p className="mt-1.5 text-xs leading-5 text-muted">{t("settings.phone.hint")}</p>
+                  </div>
+                </div>
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  <div>
+                    <Label>{t("settings.storeLat")}</Label>
+                    <Input
+                      value={storeLat}
+                      onChange={(e) => setStoreLat(e.target.value)}
+                      dir="ltr"
+                      className="text-start"
+                      placeholder="31.5017"
+                    />
+                  </div>
+                  <div>
+                    <Label>{t("settings.storeLng")}</Label>
+                    <Input
+                      value={storeLng}
+                      onChange={(e) => setStoreLng(e.target.value)}
+                      dir="ltr"
+                      className="text-start"
+                      placeholder="34.4668"
+                    />
+                  </div>
+                </div>
+                <p className="mt-1.5 text-xs leading-5 text-muted">{t("settings.storeLocation.hint")}</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => {
+                    if (!navigator.geolocation) {
+                      toast.error(t("settings.storeLocation.fail"));
+                      return;
+                    }
+                    navigator.geolocation.getCurrentPosition(
+                      (pos) => {
+                        setStoreLat(pos.coords.latitude.toFixed(6));
+                        setStoreLng(pos.coords.longitude.toFixed(6));
+                        toast.success(t("settings.storeLocation.ok"));
+                      },
+                      () => toast.error(t("settings.storeLocation.fail")),
+                    );
+                  }}
+                >
+                  {t("settings.storeLocation.useHere")}
+                </Button>
+              </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
                   <Label>{t("settings.storeName")}</Label>
@@ -145,7 +267,13 @@ function SettingsPageInner() {
               <Button onClick={save}>{t("settings.save")}</Button>
             </CardContent>
           </Card>
-        )}
+          )}
+          {tab === "store" && (
+            <>
+              <SmartGuardDemoPanel />
+              <SmartGuardLogPanel />
+            </>
+          )}
 
         {tab === "actions" && (
           <>
@@ -158,15 +286,16 @@ function SettingsPageInner() {
           <div className="space-y-4">
             <Card className="border-primary/30 bg-primary/8 p-5">
               <p className="text-sm leading-7 text-muted">{t("settings.reportIntro")}</p>
+              <p className="mt-2 text-xs leading-6 text-amber-700 dark:text-amber-200/80">{t("settings.guardExportHint")}</p>
               {reports[0] && (
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <Button onClick={() => exportReport(reports[0].key, "html", "all")}>
+                  <Button disabled={pending} onClick={() => exportReport(reports[0].key, "html", "all")}>
                     <Download className="h-4 w-4" />
-                    {t("settings.downloadAll")}
+                    {pending ? t("guard.checking") : t("settings.downloadAll")}
                   </Button>
-                  <Button variant="outline" onClick={() => exportReport(reports[0].key, "pdf", "all")}>
+                  <Button variant="outline" disabled={pending} onClick={() => exportReport(reports[0].key, "pdf", "all")}>
                     <Printer className="h-4 w-4" />
-                    {t("settings.printPdf")}
+                    {pending ? t("guard.checking") : t("settings.printPdf")}
                   </Button>
                 </div>
               )}
@@ -182,11 +311,11 @@ function SettingsPageInner() {
                 {reports.map((report) => (
                   <div key={report.key} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-black/[0.03] px-4 py-3 dark:bg-white/3">
                     <div className="flex flex-wrap gap-2">
-                      <Button size="sm" variant="outline" onClick={() => exportReport(report.key, "html")}>
+                      <Button size="sm" variant="outline" disabled={pending} onClick={() => exportReport(report.key, "html")}>
                         <Download className="h-4 w-4" />
                         HTML
                       </Button>
-                      <Button size="sm" onClick={() => exportReport(report.key, "pdf")}>
+                      <Button size="sm" disabled={pending} onClick={() => exportReport(report.key, "pdf")}>
                         <Printer className="h-4 w-4" />
                         PDF
                       </Button>

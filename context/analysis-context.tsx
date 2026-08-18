@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { analyzeParsed, analyzeUploadedFile, demoParseResult } from "@/lib/engine";
 import { DEFAULT_SETTINGS } from "@/lib/sample-data";
+import { EMPTY_SCOPE, filterTransactions, scopeIsAll, type AnalysisScope } from "@/lib/scope";
 import {
   deserializeParseResult,
   serializeParseResult,
@@ -17,11 +18,16 @@ import type {
   AppSettings,
   CurrencyCode,
   ParseResult,
+  TaxonomyMap,
+  TaxonomySide,
   WorkspaceFileMeta,
 } from "@/lib/types";
 import { FileParseError } from "@/lib/types";
 import { trackPlatform } from "@/lib/admin/track";
 import { useAuth } from "@/context/auth-context";
+import { evaluateGuard, GuardBlockedError } from "@/lib/smart-guard/client";
+import { applyLearnedSide, classificationTerm, classificationTermKey } from "@/lib/classify";
+import { readTaxonomy, upsertTaxonomyTerm, writeTaxonomy } from "@/lib/taxonomy";
 import {
   LEGACY_ANALYSIS_KEY,
   LEGACY_WORKSPACE_KEY,
@@ -51,6 +57,10 @@ interface AnalysisContextValue {
   files: WorkspaceFileMeta[];
   activeFileId: string | null;
   actionLog: ActionLogEntry[];
+  taxonomy: TaxonomyMap;
+  scope: AnalysisScope;
+  setScope: (patch: Partial<AnalysisScope> | AnalysisScope) => void;
+  clearScope: () => void;
   setCurrency: (currency: CurrencyCode) => void;
   updateSettings: (patch: Partial<AppSettings>) => void;
   saveSettings: (next: AppSettings) => void;
@@ -58,6 +68,7 @@ interface AnalysisContextValue {
   selectFile: (id: string) => void;
   removeFile: (id: string) => void;
   applyRecommendation: (rec: AiRecommendation) => ActionLogEntry;
+  resolveClassification: (key: string, side: TaxonomySide) => void;
   resetToDemo: () => void;
   clearError: () => void;
 }
@@ -96,6 +107,7 @@ function toPersisted(
   files: StoredFile[],
   activeFileId: string,
   actionLog: ActionLogEntry[],
+  taxonomy: TaxonomyMap,
 ): PersistedWorkspace {
   return {
     version: 2,
@@ -104,6 +116,7 @@ function toPersisted(
     settings,
     activeFileId,
     actionLog,
+    taxonomy,
     files: files.map((file) => ({
       id: file.id,
       fileName: file.fileName,
@@ -119,6 +132,7 @@ function fromPersisted(saved: PersistedWorkspace): {
   files: StoredFile[];
   activeFileId: string;
   actionLog: ActionLogEntry[];
+  taxonomy: TaxonomyMap;
 } {
   const settings = normalizeOpexSettings({ ...DEFAULT_SETTINGS, ...saved.settings });
   const files = (saved.files ?? []).map((file) => ({
@@ -133,7 +147,7 @@ function fromPersisted(saved: PersistedWorkspace): {
     saved.activeFileId && withDemo.some((file) => file.id === saved.activeFileId)
       ? saved.activeFileId
       : withDemo.find((file) => !file.isDemo)?.id ?? withDemo[0].id;
-  return { settings, files: withDemo, activeFileId, actionLog: saved.actionLog ?? [] };
+  return { settings, files: withDemo, activeFileId, actionLog: saved.actionLog ?? [], taxonomy: saved.taxonomy ?? {} };
 }
 
 function readLocalWorkspace(email: string): PersistedWorkspace | null {
@@ -165,6 +179,7 @@ function readLocalWorkspace(email: string): PersistedWorkspace | null {
       file.isDemo ? [file] : [demoFile(), file],
       file.id,
       [],
+      {},
     );
     localStorage.setItem(workspaceKey(email), JSON.stringify(workspace));
     localStorage.setItem(MIGRATION_KEY, email);
@@ -191,6 +206,8 @@ export function AnalysisProvider({ children }: { children: React.ReactNode }) {
   const [files, setFiles] = useState<StoredFile[]>([]);
   const [activeFileId, setActiveFileId] = useState<string | null>(null);
   const [actionLog, setActionLog] = useState<ActionLogEntry[]>([]);
+  const [taxonomy, setTaxonomy] = useState<TaxonomyMap>({});
+  const [scope, setScopeState] = useState<AnalysisScope>(EMPTY_SCOPE);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
@@ -201,9 +218,32 @@ export function AnalysisProvider({ children }: { children: React.ReactNode }) {
   const parseResult = activeFile?.parseResult ?? null;
   const isDemo = activeFile?.isDemo ?? true;
 
+  const scopedParse = useMemo(() => {
+    if (!parseResult) return null;
+    if (scopeIsAll(scope)) return parseResult;
+    const transactions = filterTransactions(parseResult.transactions, scope);
+    return {
+      ...parseResult,
+      transactions,
+      rowCount: transactions.length,
+    };
+  }, [parseResult, scope]);
+
+  const scopedSettings = useMemo(() => {
+    if (!scope.product) return settings;
+    return {
+      ...settings,
+      rent: 0,
+      salaries: 0,
+      utilities: 0,
+      otherOpex: 0,
+      opexIncludedInFile: true,
+    };
+  }, [settings, scope.product]);
+
   const result = useMemo(
-    () => (parseResult ? analyzeParsed(parseResult, settings) : null),
-    [parseResult, settings],
+    () => (scopedParse ? analyzeParsed(scopedParse, scopedSettings, taxonomy) : null),
+    [scopedParse, scopedSettings, taxonomy],
   );
 
   useEffect(() => {
@@ -222,6 +262,8 @@ export function AnalysisProvider({ children }: { children: React.ReactNode }) {
         setFiles([seed]);
         setActiveFileId(seed.id);
         setActionLog([]);
+        setTaxonomy({});
+        setScopeState(EMPTY_SCOPE);
         setHydrated(true);
         return;
       }
@@ -248,6 +290,7 @@ export function AnalysisProvider({ children }: { children: React.ReactNode }) {
         setFiles(restored.files);
         setActiveFileId(restored.activeFileId);
         setActionLog(restored.actionLog);
+        setTaxonomy({ ...readTaxonomy(ownerEmail), ...restored.taxonomy });
       } else {
         const seed = demoFile();
         const nextSettings = {
@@ -260,6 +303,7 @@ export function AnalysisProvider({ children }: { children: React.ReactNode }) {
         setFiles([seed]);
         setActiveFileId(seed.id);
         setActionLog([]);
+        setTaxonomy(readTaxonomy(ownerEmail));
       }
       setBoundEmail(ownerEmail);
       setHydrated(true);
@@ -273,8 +317,9 @@ export function AnalysisProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!hydrated || !ownerEmail || boundEmail !== ownerEmail || !activeFileId || files.length === 0) return;
-    const workspace = toPersisted(ownerEmail, settings, files, activeFileId, actionLog);
+    const workspace = toPersisted(ownerEmail, settings, files, activeFileId, actionLog, taxonomy);
     persistLocal(ownerEmail, workspace);
+    writeTaxonomy(ownerEmail, taxonomy);
     if (saveTimer.current) window.clearTimeout(saveTimer.current);
     saveTimer.current = window.setTimeout(() => {
       void fetch("/api/workspace", {
@@ -286,7 +331,7 @@ export function AnalysisProvider({ children }: { children: React.ReactNode }) {
     return () => {
       if (saveTimer.current) window.clearTimeout(saveTimer.current);
     };
-  }, [hydrated, ownerEmail, boundEmail, settings, files, activeFileId, actionLog]);
+  }, [hydrated, ownerEmail, boundEmail, settings, files, activeFileId, actionLog, taxonomy]);
 
   const setCurrency = useCallback((next: CurrencyCode) => {
     setCurrencyState(next);
@@ -304,6 +349,7 @@ export function AnalysisProvider({ children }: { children: React.ReactNode }) {
 
   const selectFile = useCallback((id: string) => {
     setActiveFileId(id);
+    setScopeState(EMPTY_SCOPE);
     setError(null);
   }, []);
 
@@ -324,7 +370,16 @@ export function AnalysisProvider({ children }: { children: React.ReactNode }) {
       setIsProcessing(true);
       setError(null);
       try {
-        const { parsed } = await analyzeUploadedFile(file, settings);
+        const verdict = await evaluateGuard({
+          action: "file_upload",
+          email: ownerEmail ?? undefined,
+          fileBytes: file.size,
+          fileName: file.name,
+        });
+        if (verdict.decision !== "allow") {
+          throw new GuardBlockedError(verdict);
+        }
+        const { parsed } = await analyzeUploadedFile(file, settings, taxonomy);
         const nextFile: StoredFile = {
           id: newId(),
           fileName: parsed.fileName,
@@ -334,8 +389,13 @@ export function AnalysisProvider({ children }: { children: React.ReactNode }) {
         };
         setFiles((prev) => [...prev, nextFile]);
         setActiveFileId(nextFile.id);
+        setScopeState(EMPTY_SCOPE);
         trackPlatform("analyze", parsed.fileName, ownerEmail ?? undefined);
       } catch (err) {
+        if (err instanceof GuardBlockedError) {
+          setIsProcessing(false);
+          throw err;
+        }
         const message =
           err instanceof FileParseError
             ? err.message
@@ -349,7 +409,7 @@ export function AnalysisProvider({ children }: { children: React.ReactNode }) {
         setIsProcessing(false);
       }
     },
-    [settings, ownerEmail],
+    [settings, ownerEmail, taxonomy],
   );
 
   const applyRecommendation = useCallback(
@@ -378,6 +438,36 @@ export function AnalysisProvider({ children }: { children: React.ReactNode }) {
     [actionLog, activeFileId, parseResult],
   );
 
+  const resolveClassification = useCallback(
+    (key: string, side: TaxonomySide) => {
+      const sample = parseResult?.transactions.find(
+        (tx) => (tx.classifyTermKey || classificationTermKey(tx)) === key,
+      );
+      const bucket = sample
+        ? (applyLearnedSide(sample, side).bucket ?? (side === "revenue" ? "revenue" : "opex"))
+        : side === "revenue"
+          ? "revenue"
+          : "opex";
+      setTaxonomy((prev) =>
+        upsertTaxonomyTerm(prev, {
+          key,
+          term: sample ? classificationTerm(sample) : key,
+          side,
+          bucket,
+        }),
+      );
+    },
+    [parseResult],
+  );
+
+  const setScope = useCallback((patch: Partial<AnalysisScope> | AnalysisScope) => {
+    setScopeState((prev) => ({ ...prev, ...patch }));
+  }, []);
+
+  const clearScope = useCallback(() => {
+    setScopeState(EMPTY_SCOPE);
+  }, []);
+
   const resetToDemo = useCallback(() => {
     const seed = demoFile();
     setFiles((prev) => {
@@ -385,6 +475,7 @@ export function AnalysisProvider({ children }: { children: React.ReactNode }) {
       return [seed, ...withoutDemo];
     });
     setActiveFileId(seed.id);
+    setScopeState(EMPTY_SCOPE);
   }, []);
 
   const value = useMemo<AnalysisContextValue>(
@@ -399,6 +490,10 @@ export function AnalysisProvider({ children }: { children: React.ReactNode }) {
       files: files.map(toMeta),
       activeFileId: activeFile?.id ?? null,
       actionLog,
+      taxonomy,
+      scope,
+      setScope,
+      clearScope,
       setCurrency,
       updateSettings,
       saveSettings,
@@ -406,6 +501,7 @@ export function AnalysisProvider({ children }: { children: React.ReactNode }) {
       selectFile,
       removeFile,
       applyRecommendation,
+      resolveClassification,
       resetToDemo,
       clearError: () => setError(null),
     }),
@@ -420,6 +516,10 @@ export function AnalysisProvider({ children }: { children: React.ReactNode }) {
       files,
       activeFile,
       actionLog,
+      taxonomy,
+      scope,
+      setScope,
+      clearScope,
       setCurrency,
       updateSettings,
       saveSettings,
@@ -427,6 +527,7 @@ export function AnalysisProvider({ children }: { children: React.ReactNode }) {
       selectFile,
       removeFile,
       applyRecommendation,
+      resolveClassification,
       resetToDemo,
     ],
   );

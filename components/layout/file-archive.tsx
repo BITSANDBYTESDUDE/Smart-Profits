@@ -39,7 +39,7 @@ export function FileArchiveList({
 
   return (
     <div className={cn("space-y-2", compact ? "" : "rounded-2xl border border-border bg-white/3 p-3")}>
-      <p className={cn("text-[11px] font-medium tracking-wide text-muted", compact && "mb-1 px-3")}>
+      <p className={cn("text-[11px] font-medium tracking-wide text-muted", compact && "mb-1 px-1")}>
         {t("file.archive")}
       </p>
       <div className={cn("space-y-1", compact ? "max-h-52 overflow-y-auto" : "")}>
@@ -56,7 +56,7 @@ export function FileArchiveList({
               <button
                 type="button"
                 onClick={() => openFile(file.id)}
-                className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2 text-start text-sm"
+                className="flex min-w-0 flex-1 items-center gap-2 px-2.5 py-2 text-start text-sm"
               >
                 <FileSpreadsheet className={cn("h-4 w-4 shrink-0", active ? "text-primary" : "text-slate-500")} />
                 <span className="min-w-0 flex-1">

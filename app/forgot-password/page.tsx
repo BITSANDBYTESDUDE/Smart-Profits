@@ -10,10 +10,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAppearance } from "@/context/appearance";
 import { useAuth } from "@/context/auth-context";
+import { useSmartGuard } from "@/context/smart-guard-context";
+import { GuardBlockedError } from "@/lib/smart-guard/client";
 import { toast } from "sonner";
 
 export default function ForgotPasswordPage() {
   const { findAccount, register } = useAuth();
+  const { protect } = useSmartGuard();
   const { t } = useAppearance();
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -71,6 +74,11 @@ export default function ForgotPasswordPage() {
     if (newPassword.length < 6) {
       toast.error(t("auth.forgot.short"));
       return;
+    }
+    try {
+      await protect("password_reset", { email: account.email, phone: account.phone });
+    } catch (error) {
+      if (error instanceof GuardBlockedError) return;
     }
     await register({ ...account, password: newPassword });
     toast.success(t("auth.forgot.saved"));

@@ -6,11 +6,17 @@ export interface StoredAccount {
   fullName: string;
   storeName: string;
   email: string;
+  phone: string;
   password: string;
   createdAt: string;
   lastActive?: string;
   plan?: PlanTier;
   status?: AccountStatus;
+  guardFrozen?: boolean;
+  guardFrozenAt?: string;
+  guardReason?: string;
+  homeLat?: number;
+  homeLng?: number;
 }
 
 const FILE = path.join(process.cwd(), "data", "users.json");
@@ -44,11 +50,18 @@ export async function upsertAccount(account: Partial<StoredAccount> & { email: s
     fullName: account.fullName ?? previous?.fullName ?? "",
     storeName: account.storeName ?? previous?.storeName ?? "",
     email,
+    phone: account.phone ?? previous?.phone ?? "",
     password: account.password ?? previous?.password ?? "",
     createdAt: previous?.createdAt ?? account.createdAt ?? new Date().toISOString(),
     lastActive: account.lastActive ?? previous?.lastActive ?? new Date().toISOString(),
     plan: account.plan ?? previous?.plan ?? "free",
     status: account.status ?? previous?.status ?? "active",
+    guardFrozen: account.guardFrozen ?? previous?.guardFrozen ?? false,
+    guardFrozenAt:
+      account.guardFrozenAt !== undefined ? account.guardFrozenAt || undefined : previous?.guardFrozenAt,
+    guardReason: account.guardReason ?? previous?.guardReason,
+    homeLat: account.homeLat ?? previous?.homeLat,
+    homeLng: account.homeLng ?? previous?.homeLng,
   };
   if (index >= 0) accounts[index] = next;
   else accounts.push(next);
@@ -61,14 +74,24 @@ export async function findAccount(email: string) {
   return accounts.find((item) => item.email === email.trim().toLowerCase()) ?? null;
 }
 
+export async function findAccountByPhone(phone: string, exceptEmail?: string) {
+  if (!phone) return null;
+  const accounts = await readAccounts();
+  const skip = exceptEmail?.trim().toLowerCase();
+  return accounts.find((item) => item.phone === phone && (!skip || item.email !== skip)) ?? null;
+}
+
 export function publicAccount(account: StoredAccount) {
   return {
     fullName: account.fullName,
     storeName: account.storeName,
     email: account.email,
+    phone: account.phone || "",
     createdAt: account.createdAt,
     lastActive: account.lastActive,
     plan: account.plan ?? "free",
     status: account.status ?? "active",
+    guardFrozen: Boolean(account.guardFrozen),
+    guardReason: account.guardReason ?? "",
   };
 }

@@ -1,7 +1,10 @@
 "use client";
 
 import {
+  Bar,
+  BarChart,
   CartesianGrid,
+  Legend,
   Line,
   LineChart,
   ResponsiveContainer,
@@ -10,45 +13,107 @@ import {
   YAxis,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useChartTheme } from "@/components/charts/use-chart-theme";
 import { useAnalysis } from "@/context/analysis-context";
-import { convertAmount, formatMoney } from "@/lib/format";
+import { useAppearance } from "@/context/appearance";
+import { convertAmount, currencySuffix } from "@/lib/format";
+
+function formatAxis(value: number) {
+  if (Math.abs(value) >= 1000) return `${Math.round(value / 1000)}k`;
+  return String(Math.round(value));
+}
 
 export function RevenueExpenseChart() {
   const { result, currency } = useAnalysis();
+  const { t, months } = useAppearance();
+  const palette = useChartTheme();
   if (!result) return null;
 
   const data = result.monthlySeries.map((point) => ({
-    name: point.label.replace(/ \d{4}$/, ""),
+    name: months[point.month] ?? point.label.replace(/ \d{4}$/, ""),
     revenue: Math.round(convertAmount(point.revenue, currency)),
     expenses: Math.round(convertAmount(point.expenses, currency)),
   }));
+  const suffix = currencySuffix(currency);
+  const useBars = data.length <= 2;
 
   return (
     <Card className="h-full">
       <CardHeader>
-        <CardTitle>الإيرادات مقابل المصروفات</CardTitle>
-        <div className="flex gap-4 text-xs text-muted">
-          <span className="flex items-center gap-1.5">
-            <i className="h-2 w-2 rounded-full bg-accent" /> الإيرادات الفعلية
-          </span>
-          <span className="flex items-center gap-1.5">
-            <i className="h-2 w-2 rounded-full bg-slate-400" /> المصروفات
-          </span>
+        <div>
+          <CardTitle>{t("chart.revVsExp")}</CardTitle>
+          <p className="mt-1 text-xs leading-5 text-muted">
+            {t("chart.revVsExp.hint")}
+            {data.length === 1 ? ` ${t("chart.oneMonth")}.` : ""}
+          </p>
         </div>
       </CardHeader>
-      <CardContent className="h-[280px]" dir="ltr">
+      <CardContent className="h-[300px]" dir="ltr">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data}>
-            <CartesianGrid stroke="#1e293b" strokeDasharray="3 3" />
-            <XAxis dataKey="name" tick={{ fill: "#94a3b8", fontSize: 11 }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} axisLine={false} tickLine={false} />
-            <Tooltip
-              contentStyle={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 12 }}
-              formatter={(value) => formatMoney(currency === "USD" ? Number(value) * 3.75 : Number(value), currency)}
-            />
-            <Line type="monotone" dataKey="revenue" stroke="#4fd1c5" strokeWidth={3} dot={false} />
-            <Line type="monotone" dataKey="expenses" stroke="#94a3b8" strokeWidth={2} strokeDasharray="6 6" dot={false} />
-          </LineChart>
+          {useBars ? (
+            <BarChart data={data} barGap={8}>
+              <CartesianGrid stroke={palette.grid} strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="name" tick={{ fill: palette.tick, fontSize: 12 }} axisLine={false} tickLine={false} />
+              <YAxis
+                tick={{ fill: palette.tick, fontSize: 11 }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={formatAxis}
+              />
+              <Tooltip
+                contentStyle={palette.tooltipStyle}
+                formatter={(value, name) => [
+                  `${Number(value).toLocaleString("en-US")} ${suffix}`,
+                  name === "revenue" ? t("chart.rev") : t("chart.exp"),
+                ]}
+              />
+              <Legend
+                formatter={(value) => (value === "revenue" ? t("chart.rev") : t("chart.exp"))}
+                wrapperStyle={{ color: palette.tick, fontSize: 12 }}
+              />
+              <Bar dataKey="revenue" fill={palette.revenue} radius={[8, 8, 0, 0]} maxBarSize={56} />
+              <Bar dataKey="expenses" fill={palette.expenses} radius={[8, 8, 0, 0]} maxBarSize={56} />
+            </BarChart>
+          ) : (
+            <LineChart data={data}>
+              <CartesianGrid stroke={palette.grid} strokeDasharray="3 3" />
+              <XAxis dataKey="name" tick={{ fill: palette.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis
+                tick={{ fill: palette.tick, fontSize: 11 }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={formatAxis}
+              />
+              <Tooltip
+                contentStyle={palette.tooltipStyle}
+                formatter={(value, name) => [
+                  `${Number(value).toLocaleString("en-US")} ${suffix}`,
+                  name === "revenue" ? t("chart.rev") : t("chart.exp"),
+                ]}
+              />
+              <Legend
+                formatter={(value) => (value === "revenue" ? t("chart.rev") : t("chart.exp"))}
+                wrapperStyle={{ color: palette.tick, fontSize: 12 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="revenue"
+                stroke={palette.revenue}
+                strokeWidth={3}
+                dot={{ r: 4, fill: palette.revenue, strokeWidth: 0 }}
+                activeDot={{ r: 6 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="expenses"
+                stroke={palette.expenses}
+                strokeWidth={2}
+                strokeDasharray="6 6"
+                dot={{ r: 3, fill: palette.expenses, strokeWidth: 0 }}
+                activeDot={{ r: 5 }}
+              />
+            </LineChart>
+          )}
         </ResponsiveContainer>
       </CardContent>
     </Card>

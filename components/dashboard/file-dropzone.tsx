@@ -8,6 +8,8 @@ import { toast } from "sonner";
 import { OpexSetupModal } from "@/components/opex/opex-setup-modal";
 import { useAnalysis } from "@/context/analysis-context";
 import { useAppearance } from "@/context/appearance";
+import { useSmartGuard } from "@/context/smart-guard-context";
+import { GuardBlockedError } from "@/lib/smart-guard/client";
 import type { AppSettings } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +24,7 @@ export function FileDropzone({
   redirectToAnalysis?: boolean;
 }) {
   const { analyzeFile, isProcessing, saveSettings } = useAnalysis();
+  const { protect, pending } = useSmartGuard();
   const { t } = useAppearance();
   const router = useRouter();
   const [setupOpen, setSetupOpen] = useState(false);
@@ -40,6 +43,7 @@ export function FileDropzone({
         toast.success(selected.length > 1 ? t("data.analyzedMany") : t("data.analyzedOne"));
         router.replace("/data");
       } catch (error) {
+        if (error instanceof GuardBlockedError) return;
         toast.error(error instanceof Error ? error.message : t("data.analyzeFail"));
       }
     },
@@ -50,6 +54,11 @@ export function FileDropzone({
     async (files: File[]) => {
       const selected = files.filter(Boolean);
       if (!selected.length) return;
+      try {
+        await protect("file_upload", { file: selected[0] });
+      } catch (error) {
+        if (error instanceof GuardBlockedError) return;
+      }
       if (analyzeAfterPicker.current) {
         analyzeAfterPicker.current = false;
         await runAnalysis(selected);
@@ -59,7 +68,7 @@ export function FileDropzone({
       setHasPending(true);
       setSetupOpen(true);
     },
-    [runAnalysis],
+    [protect, runAnalysis],
   );
 
   const { getRootProps, getInputProps, open, isDragActive } = useDropzone({
@@ -68,7 +77,7 @@ export function FileDropzone({
     noKeyboard: true,
     multiple: true,
     maxSize: 50 * 1024 * 1024,
-    disabled: isProcessing,
+    disabled: isProcessing || pending,
     accept: {
       "text/csv": [".csv"],
       "application/vnd.ms-excel": [".xls"],
@@ -80,8 +89,13 @@ export function FileDropzone({
     },
   });
 
-  function handleZoneClick() {
-    if (isProcessing) return;
+  async function handleZoneClick() {
+    if (isProcessing || pending) return;
+    try {
+      await protect("file_upload");
+    } catch (error) {
+      if (error instanceof GuardBlockedError) return;
+    }
     pendingFiles.current = null;
     setHasPending(false);
     setSetupOpen(true);
@@ -147,6 +161,9 @@ export function FileDropzone({
             {title ?? (isProcessing ? t("data.studying") : t("data.drop"))}
           </p>
           <p className="mt-1 text-sm text-muted">{hint ?? t("data.orClick")}</p>
+          <p className="mt-2 max-w-md text-xs leading-6 text-amber-700 dark:text-amber-200/80">
+            {t("data.guardHint")}
+          </p>
           <p className="mt-2 max-w-md text-xs leading-6 text-amber-700 dark:text-amber-200/80">
             {t("data.opexHint")}
           </p>

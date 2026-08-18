@@ -128,8 +128,10 @@ export function KpiCards() {
             </div>
             <div className="space-y-2 font-mono text-sm text-slate-200">
               <p className="flex justify-between"><span>المبيعات</span><span>{formatMoney(kpis.totalRevenue, currency)}</span></p>
-              <p className="flex justify-between"><span>- تكلفة البضاعة</span><span>{formatMoney(kpis.totalCogs, currency)}</span></p>
-              <p className="flex justify-between"><span>- مصاريف التشغيل</span><span>{formatMoney(kpis.totalOpex, currency)}</span></p>
+              <p className="flex justify-between"><span>- تكلفة المبيعات / خامات</span><span>{formatMoney(kpis.totalCogs, currency)}</span></p>
+              <p className="flex justify-between"><span>- تشغيل</span><span>{formatMoney(kpis.totalOpex, currency)}</span></p>
+              <p className="flex justify-between"><span>- رواتب من الملف</span><span>{formatMoney(kpis.totalSalaries, currency)}</span></p>
+              <p className="flex justify-between"><span>- تالف وهالك</span><span>{formatMoney(kpis.totalWaste, currency)}</span></p>
               <p className="border-t border-border pt-2 flex justify-between text-accent">
                 <span>صافي الربح</span>
                 <span>{formatMoney(kpis.netProfit, currency)}</span>
@@ -137,10 +139,10 @@ export function KpiCards() {
             </div>
             <p className="mt-3 text-sm leading-7 text-slate-300">
               {open === "profit"
-                ? "صافي الربح الحقيقي = المبيعات − (تكلفة البضاعة + الإيجار والرواتب والفواتير وأي مصروف تشغيل في الملف). بدون الثوابت يظهر ربح وهمي."
+                ? "صافي الربح = المبيعات فقط − (خامات + تشغيل + رواتب + تالف). الإيجار والرواتب في الإعدادات تُضاف إن لم تكن داخل الملف. بنود مثل الإيجار والكهرباء لا تُحسب مبيعات."
                 : open === "expenses"
-                  ? "المصروف هنا يجمع تكلفة البضاعة المباعة مع المصاريف التشغيلية الثابتة من الإعدادات."
-                  : "المبيعات تُحسب من سعر البيع × الكمية، أو من عمود الإيراد إن وُجد."}
+                  ? "المصروف يجمع تكلفة المبيعات/الخامات + التشغيل + الرواتب + التالف، عبر كل أشهر الملف."
+                  : "المبيعات تُحسب فقط من الصفوف المصنّفة إيراد/بيع بالعربي أو الإنجليزي. المصروف والرواتب لا تدخل هنا."}
             </p>
           </Card>
         </div>

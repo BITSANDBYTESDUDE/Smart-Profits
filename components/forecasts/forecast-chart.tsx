@@ -2,6 +2,7 @@
 
 import {
   CartesianGrid,
+  Legend,
   Line,
   LineChart,
   ResponsiveContainer,
@@ -11,37 +12,104 @@ import {
 } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useChartTheme } from "@/components/charts/use-chart-theme";
 import { useAnalysis } from "@/context/analysis-context";
-import { convertAmount, formatMoney } from "@/lib/format";
+import { useAppearance } from "@/context/appearance";
+import { convertAmount, currencySuffix } from "@/lib/format";
+
+function formatAxis(value: number) {
+  if (Math.abs(value) >= 1000) return `${Math.round(value / 1000)}k`;
+  return String(Math.round(value));
+}
 
 export function ForecastChart() {
   const { result, currency } = useAnalysis();
+  const { t, months } = useAppearance();
+  const palette = useChartTheme();
   if (!result) return null;
 
-  const data = result.forecast.series.map((point) => ({
-    name: point.label,
-    actual: point.isForecast ? undefined : Math.round(convertAmount(point.actualRevenue ?? 0, currency)),
-    forecast: Math.round(convertAmount(point.predictedRevenue ?? 0, currency)),
-  }));
+  const series = result.forecast.series.filter((point) => {
+    const year = Number(point.key.split("-")[0]);
+    return year >= 2000 && year <= 2100;
+  });
+  const lastActualIndex = series.reduce((acc, point, index) => (point.isForecast ? acc : index), -1);
+
+  const years = new Set(series.map((point) => point.key.slice(0, 4)));
+  const showYear = years.size > 1;
+
+  const data = series.map((point, index) => {
+    const [year, month] = point.key.split("-").map(Number);
+    const monthName = months[(month || 1) - 1] ?? point.label.replace(/ \d{4}$/, "");
+    const label = `${monthName}${showYear ? ` ${year}` : ""}${point.isForecast ? ` · ${t("chart.forecast")}` : ""}`;
+    const value = Math.round(convertAmount((point.predictedRevenue ?? point.actualRevenue) ?? 0, currency));
+    return {
+      name: label,
+      actual: point.isForecast ? undefined : value,
+      forecast: point.isForecast || index === lastActualIndex ? value : undefined,
+    };
+  });
+
+  const suffix = currencySuffix(currency);
 
   return (
     <Card className="h-full">
       <CardHeader>
-        <CardTitle>مسار الإيرادات المتوقع</CardTitle>
-        <Badge tone="info">تحليلات AI</Badge>
+        <div>
+          <CardTitle>{t("chart.forecastTitle")}</CardTitle>
+          <p className="mt-1 text-xs leading-5 text-muted">{t("chart.forecastHint")}</p>
+        </div>
+        <Badge tone="info">{t("chart.forecast")}</Badge>
       </CardHeader>
       <CardContent className="h-[320px]" dir="ltr">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>
-            <CartesianGrid stroke="#1e293b" strokeDasharray="3 3" />
-            <XAxis dataKey="name" tick={{ fill: "#94a3b8", fontSize: 10 }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} axisLine={false} tickLine={false} />
-            <Tooltip
-              contentStyle={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 12 }}
-              formatter={(value) => formatMoney(currency === "USD" ? Number(value) * 3.75 : Number(value), currency)}
+            <CartesianGrid stroke={palette.grid} strokeDasharray="3 3" />
+            <XAxis
+              dataKey="name"
+              tick={{ fill: palette.tick, fontSize: 10 }}
+              axisLine={false}
+              tickLine={false}
+              interval={0}
+              angle={data.length > 6 ? -25 : 0}
+              textAnchor={data.length > 6 ? "end" : "middle"}
+              height={data.length > 6 ? 58 : 30}
             />
-            <Line type="monotone" dataKey="actual" stroke="#4fd1c5" strokeWidth={3} dot={false} connectNulls={false} />
-            <Line type="monotone" dataKey="forecast" stroke="#e8c56b" strokeWidth={2} strokeDasharray="7 6" dot={false} />
+            <YAxis
+              tick={{ fill: palette.tick, fontSize: 11 }}
+              axisLine={false}
+              tickLine={false}
+              tickFormatter={formatAxis}
+            />
+            <Tooltip
+              contentStyle={palette.tooltipStyle}
+              formatter={(value, name) => [
+                `${Number(value).toLocaleString("en-US")} ${suffix}`,
+                name === "actual" ? t("chart.actual") : t("chart.forecast"),
+              ]}
+            />
+            <Legend
+              formatter={(value) => (value === "actual" ? t("chart.actual") : t("chart.forecast"))}
+              wrapperStyle={{ color: palette.tick, fontSize: 12 }}
+            />
+            <Line
+              type="monotone"
+              dataKey="actual"
+              stroke={palette.revenue}
+              strokeWidth={3}
+              connectNulls={false}
+              dot={{ r: 5, fill: palette.revenue, strokeWidth: 0 }}
+              activeDot={{ r: 7 }}
+            />
+            <Line
+              type="monotone"
+              dataKey="forecast"
+              stroke={palette.forecast}
+              strokeWidth={3}
+              strokeDasharray="7 6"
+              connectNulls
+              dot={{ r: 5, fill: palette.forecast, strokeWidth: 0 }}
+              activeDot={{ r: 7 }}
+            />
           </LineChart>
         </ResponsiveContainer>
       </CardContent>

@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Smart Profits — Pitch Deck | GSMA MENA Ignite</title>
+  <style>
+    :root {
+      --navy: #0b1120;
+      --cyan: #4fd1c5;
+      --cyan-d: #0f9e94;
+      --gold: #e8c56b;
+      --paper: #f4f7fb;
+      --muted: #94a3b8;
+      --card: #162136;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: #111827; }
+    body { font-family: "Segoe UI", "IBM Plex Sans", Arial, sans-serif; }
+    .slide {
+      width: 1280px;
+      height: 720px;
+      margin: 24px auto;
+      padding: 42px 52px 48px;
+      background: var(--navy);
+      color: #f8fafc;
+      position: relative;
+      overflow: hidden;
+      page-break-after: always;
+    }
+    .bar {
+      position: absolute; top: 0; left: 0; right: 0; height: 6px;
+      background: linear-gradient(90deg, var(--cyan), var(--gold));
+    }
+    .kicker { color: var(--cyan); font-size: 13px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; margin: 0 0 8px; }
+    h1 { font-size: 42px; line-height: 1.12; margin: 0 0 14px; }
+    h2 { font-size: 30px; margin: 0 0 18px; }
+    p, li { font-size: 18px; line-height: 1.4; }
+    .muted { color: var(--muted); }
+    .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .cols3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    .cols4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; }
+    .card {
+      background: var(--card);
+      border: 1px solid rgba(79,209,197,0.22);
+      padding: 16px 18px;
+    }
+    .card h3 { margin: 0 0 8px; font-size: 16px; color: var(--gold); }
+    .tag {
+      display: inline-block;
+      background: rgba(79,209,197,0.15);
+      color: var(--cyan);
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      margin: 0 8px 8px 0;
+    }
+    .foot {
+      position: absolute; bottom: 20px; left: 52px; right: 52px;
+      display: flex; justify-content: space-between;
+      font-size: 13px; color: var(--muted);
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 15px; }
+    td { padding: 9px 8px; border-bottom: 1px solid rgba(255,255,255,0.1); vertical-align: top; }
+    .num { color: var(--gold); font-weight: 800; font-size: 26px; margin: 0 0 6px; }
+    ul { margin: 8px 0; padding-left: 22px; }
+    .center { display: flex; flex-direction: column; justify-content: center; height: 620px; }
+    .shots { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .shots figure { margin: 0; }
+    .shots img { width: 100%; height: 230px; object-fit: cover; object-position: top; border: 1px solid rgba(79,209,197,0.25); }
+    .shots figcaption { color: var(--cyan); font-size: 12px; font-weight: 700; margin-top: 4px; }
+    a { color: var(--cyan); }
+    @media print {
+      html, body { background: #fff; }
+      .slide { margin: 0; box-shadow: none; page-break-after: always; }
+    }
+  </style>
+</head>
+<body>
+
+<section class="slide">
+  <div class="bar"></div>
+  <div class="center">
+    <p class="kicker">GSMA MENA Ignite · Nokia Network-as-Code · Theme 4</p>
+    <h1>Smart Profits</h1>
+    <p style="font-size:24px;max-width:980px;color:var(--gold);">AI-Driven Financial Analytics &amp; Telco-Secured Merchant Platform</p>
+    <p class="muted" style="margin-top:18px;">The merchant’s CFO in the chat. Bank-grade SIM-swap defence on the login.<br/>CAMARA APIs via Nokia Network-as-Code. Decisions by an AI Agent — not by SMS.</p>
+    <p style="margin-top:24px;">
+      <span class="tag">SIM Swap</span>
+      <span class="tag">Number Verification</span>
+      <span class="tag">Location Verification</span>
+      <span class="tag">AI Agent</span>
+      <span class="tag">Theme 4</span>
+    </p>
+    <p class="muted" style="margin-top:18px;">Bitsandbytesdude Software Agency · Gaza / MENA · August 2026</p>
+  </div>
+  <div class="foot"><span>Phase 1 Idea Pitch</span><span>Secure FinTech, Payments &amp; Anti-Fraud</span></div>
+</section>
+
+<section class="slide">
+  <div class="bar"></div>
+  <p class="kicker">1. Problem statement and context</p>
+  <h2>The P&amp;L lives in Excel. So does the fraud.</h2>
+  <div class="cols3">
+    <div class="card">
+      <h3>Financial blindness</h3>
+      <p>MENA merchants run shops from messy Arabic and English Excel, CSV, PDF and photos. Rent and salaries are missing. Phantom profit looks healthy.</p>
+    </div>
+    <div class="card">
+      <h3>Profit leakage</h3>
+      <p>Weak SKUs and unplanned OpEx hide real net profit. A “good month” in the sales sheet can still be cash-negative for the store.</p>
+    </div>
+    <div class="card">
+      <h3>Account takeover</h3>
+      <p>A SIM swap beats SMS OTP. The attacker then downloads P&amp;L reports, changes prices, or steals the files that <em>are</em> the business.</p>
+    </div>
+  </div>
+  <p class="muted" style="margin-top:22px;">Banks already buy network APIs. The SaaS that holds the merchant’s books usually does not. That is the Theme 4 gap.</p>
+  <div class="foot"><span>Smart Profits</span><span>02 / 10</span></div>
+</section>
+
+<section class="slide">
+  <div class="bar"></div>
+  <p class="kicker">2. Solution and Nokia CAMARA APIs</p>
+  <h2>One platform. Two brains. Three network APIs.</h2>
+  <div class="cols">
+    <div class="card">
+      <h3>Financial AI</h3>
+      <p>Cleans messy Excel/CSV/PDF. Diagnoses health, leaks, inventory and a 30-day plan. Answers from the currently open file in Arabic or English.</p>
+    </div>
+    <div class="card">
+      <h3>Smart Guard AI Agent</h3>
+      <p>On login, reset, upload, export and price change, the agent calls Nokia Network-as-Code and decides Allow / Step-up / Freeze.</p>
+    </div>
+  </div>
+  <table style="margin-top:16px;">
+    <tr><td style="width:24%;color:var(--cyan);font-weight:700;">Number Verification</td><td>Silent 4G/5G login check. Confirm the live network number. No extra SMS.</td></tr>
+    <tr><td style="color:var(--cyan);font-weight:700;">SIM Swap</td><td>Login, reset, price change. Recent swap → freeze. SMS OTP is untrusted.</td></tr>
+    <tr><td style="color:var(--cyan);font-weight:700;">Location Verification</td><td>Financial upload and P&amp;L export must match the usual store / branch area.</td></tr>
+  </table>
+  <p class="muted" style="margin-top:14px;">Testing uses Nokia Network-as-Code developer portal simulators, then maps one-to-one onto production CAMARA endpoints.</p>
+  <div class="foot"><span>Smart Profits</span><span>03 / 10</span></div>
+</section>
+
+<section class="slide">
+  <div class="bar"></div>
+  <p class="kicker">3. AI Agent design</p>
+  <h2>Smart Guard decides. It does not caption.</h2>
+  <div class="cols4">
+    <div class="card"><p class="num">1</p><h3>Sense</h3><p>Login, reset, file upload, P&amp;L export, price change.</p></div>
+    <div class="card"><p class="num">2</p><h3>Query</h3><p>Call SIM Swap, Number Verification, Location Verification via Nokia NaC.</p></div>
+    <div class="card"><p class="num">3</p><h3>Decide</h3><p>Fuse network risk with file sensitivity. Allow · Step-up · Freeze.</p></div>
+    <div class="card"><p class="num">4</p><h3>Act</h3><p>If freeze: do not store the workbook. Explain in Arabic or English.</p></div>
+  </div>
+  <p style="font-family:Consolas,monospace;font-size:16px;background:rgba(0,0,0,0.35);padding:16px 18px;line-height:1.55;margin-top:18px;">
+    action: upload monthly_sales.xlsx<br/>
+    → agent.check(SIM Swap, Number Verification, Location Verification)<br/>
+    → SIM Swap = recent  <span style="color:var(--gold)">OR</span>  location ≠ store geofence  →  <span style="color:var(--cyan)">FREEZE</span>
+  </p>
+  <div class="foot"><span>Smart Profits</span><span>04 / 10</span></div>
+</section>
+
+<section class="slide">
+  <div class="bar"></div>
+  <p class="kicker">4. Technical architecture</p>
+  <h2>Next.js + PostgreSQL + Nokia NaC + AI Agent</h2>
+  <div class="card" style="text-align:center;margin-bottom:14px;"><h3>Merchant app — Next.js / TypeScript — Arabic RTL + English</h3></div>
+  <div class="cols">
+    <div class="card"><h3>Smart Guard AI Agent</h3><p>Orchestrates CAMARA tools + financial context. Allow / Step-up / Freeze. Only path to login step-up, upload and export.</p></div>
+    <div class="card"><h3>Financial engine</h3><p>Parse Excel/CSV/PDF · P&amp;L · leaks · Q&amp;A on the open file.</p></div>
+  </div>
+  <div class="cols3" style="margin-top:14px;">
+    <div class="card"><h3>PostgreSQL</h3><p>Users, files, P&amp;L, risk event log.</p></div>
+    <div class="card"><h3>Nokia Network-as-Code</h3><p>Single developer path to operator CAMARA APIs.</p></div>
+    <div class="card"><h3>CAMARA</h3><p>SIM Swap · Number Verification · Location Verification.</p></div>
+  </div>
+  <div class="foot"><span>Smart Profits</span><span>05 / 10</span></div>
+</section>
+
+<section class="slide">
+  <div class="bar"></div>
+  <p class="kicker">5. Business model &amp; monetization</p>
+  <h2>Try the books. Then pay for the guard.</h2>
+  <div class="cols3">
+    <div class="card">
+      <p class="muted" style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;">Full product</p>
+      <h3>7-day free trial</h3>
+      <p>Upload, diagnosis, bilingual advisor and Smart Guard demo. No card required to start.</p>
+    </div>
+    <div class="card">
+      <p class="muted" style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;">The merchant plan</p>
+      <h3>Pro · $49 / month</h3>
+      <p>Ongoing P&amp;L, profit leaks, open-file Q&amp;A, and telco-secured login / upload / export for one store.</p>
+    </div>
+    <div class="card">
+      <p class="muted" style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;">Multi-branch</p>
+      <h3>Business · $99 / month</h3>
+      <p>Several locations, tighter Location Verification geofences, team seats, priority freeze review.</p>
+    </div>
+  </div>
+  <p class="muted" style="margin-top:22px;">SaaS is the merchant revenue. CAMARA calls are the security cost of goods — and a future B2B2X path with operators. Smart Profits is incubated as a Bitsandbytesdude product line.</p>
+  <div class="foot"><span>Smart Profits</span><span>06 / 10</span></div>
+</section>
+
+<section class="slide">
+  <div class="bar"></div>
+  <p class="kicker">6. Demo screenshots</p>
+  <h2>A working merchant product — not a slide-only idea</h2>
+  <div class="shots">
+    <figure>
+      <img src="screenshots/02-dashboard.png" alt="Dashboard" />
+      <figcaption>Dashboard — health, P&amp;L, phantom vs real profit</figcaption>
+    </figure>
+    <figure>
+      <img src="screenshots/03-advisor.png" alt="Advisor" />
+      <figcaption>Advisor — file-grounded Q&amp;A</figcaption>
+    </figure>
+    <figure>
+      <img src="screenshots/04-data.png" alt="Files" />
+      <figcaption>Files — messy Excel cleaned automatically</figcaption>
+    </figure>
+    <figure>
+      <img src="screenshots/05-simulator.png" alt="Simulator" />
+      <figcaption>Simulator — what-if pricing and forecast</figcaption>
+    </figure>
+  </div>
+  <div class="foot"><span>Smart Profits</span><span>07 / 10</span></div>
+</section>
+
+<section class="slide">
+  <div class="bar"></div>
+  <p class="kicker">6. Demo walkthrough &amp; links</p>
+  <h2>What judges will see in three minutes</h2>
+  <div class="card" style="margin-bottom:12px;"><h3>1 · Analyse</h3><p>Upload a messy furniture ledger. Ask the advisor for the highest-profit SKU. See phantom vs real net profit.</p></div>
+  <div class="card" style="margin-bottom:12px;"><h3>2 · Attack</h3><p>Nokia NaC simulator: SIM Swap = true. Upload and export freeze. The agent explains why SMS OTP is untrusted.</p></div>
+  <div class="card" style="margin-bottom:16px;"><h3>3 · Place</h3><p>Location mismatch vs store geofence. The financial file never lands. Number Verification recovers the trusted line.</p></div>
+  <p>
+    Product: <a href="https://github.com/BITSANDBYTESDUDE/Smart-Profits">github.com/BITSANDBYTESDUDE/Smart-Profits</a><br/>
+    Studio: <a href="https://bitsandbytesdude.vercel.app/">bitsandbytesdude.vercel.app</a><br/>
+    Network layer: Nokia Network-as-Code developer portal simulators
+  </p>
+  <div class="foot"><span>Smart Profits</span><span>08 / 10</span></div>
+</section>
+
+<section class="slide">
+  <div class="bar"></div>
+  <p class="kicker">7. Team bios and roles</p>
+  <h2>A Gaza product, inside a shipping software studio</h2>
+  <div class="cols">
+    <div class="card">
+      <p class="muted" style="font-size:12px;letter-spacing:0.08em;">FOUNDER / PRODUCT LEAD</p>
+      <h3>Israa Nael Hamad</h3>
+      <p><strong>Software Engineering · final year</strong><br/>University of Palestine, Gaza.</p>
+      <p>Owns product vision, merchant UX, bilingual FinTech experience, and the Theme 4 narrative: phantom Excel profit vs SIM-swap takeover of the same files. Smart Profits is her product, brought into the studio as a core line.</p>
+    </div>
+    <div class="card">
+      <p class="muted" style="font-size:12px;letter-spacing:0.08em;">PRINCIPAL / TECHNICAL CO-FOUNDER</p>
+      <h3>Mir Kashif</h3>
+      <p><strong>Bitsandbytesdude Software Agency</strong></p>
+      <p>Leads engineering: full-stack platforms, AI &amp; agent workflows, and cloud delivery. Smart Profits is being added to the Bitsandbytesdude portfolio — Next.js, agent orchestration, and Nokia NaC under one shipping team.</p>
+      <p><a href="https://bitsandbytesdude.vercel.app/">bitsandbytesdude.vercel.app</a></p>
+    </div>
+  </div>
+  <p class="muted" style="margin-top:16px;">Studio: Bitsandbytesdude — software, AI automation and product systems · bitsandbytesdude@gmail.com · Remote-first, MENA-rooted</p>
+  <div class="foot"><span>Smart Profits</span><span>09 / 10</span></div>
+</section>
+
+<section class="slide">
+  <div class="bar"></div>
+  <div class="center">
+    <p class="kicker">The ask</p>
+    <h1>Advance Smart Profits under Theme 4.</h1>
+    <p class="muted">A real merchant SaaS. A real AI Agent. Real CAMARA APIs through Nokia Network-as-Code.<br/>Next: NaC simulator freeze demo · path to MWC Doha 2026.</p>
+    <p style="margin-top:24px;">
+      <span class="tag">CAMARA via Nokia NaC — used</span>
+      <span class="tag">AI Agent orchestration — used</span>
+      <span class="tag">MENA inclusion — AR + EN</span>
+    </p>
+    <p style="margin-top:22px;color:var(--gold);">Israa Nael Hamad · Mir Kashif · Bitsandbytesdude · University of Palestine, Gaza</p>
+  </div>
+  <div class="foot"><span>Thank you</span><span>10 / 10</span></div>
+</section>
+
+</body>
+</html>

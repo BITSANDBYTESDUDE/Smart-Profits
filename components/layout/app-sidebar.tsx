@@ -36,8 +36,8 @@ export function AppSidebar() {
   ];
 
   return (
-    <aside className="sticky top-0 flex h-screen w-[320px] shrink-0 flex-col overflow-y-auto border-e border-border bg-card px-4 py-5">
-      <Logo size="md" tagline={t("brand.tagline")} />
+    <aside className="sticky top-0 flex h-screen w-60 shrink-0 flex-col overflow-y-auto border-e border-border bg-card px-3 py-4">
+      <Logo size="sm" tagline={t("brand.tagline")} />
       <div className="mt-4">
         <AppearanceToggles />
       </div>
@@ -56,7 +56,7 @@ export function AppSidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition",
+                "flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm leading-5 transition",
                 active
                   ? "bg-primary/15 text-foreground shadow-[inset_3px_0_0_var(--primary)] rtl:shadow-[inset_-3px_0_0_var(--primary)]"
                   : "text-muted hover:bg-black/5 hover:text-foreground dark:hover:bg-white/5",
@@ -85,7 +85,7 @@ export function AppSidebar() {
             logout();
             router.push("/login");
           }}
-          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-muted hover:bg-black/5 hover:text-foreground dark:hover:bg-white/5"
+          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm text-muted hover:bg-black/5 hover:text-foreground dark:hover:bg-white/5"
         >
           <LogOut className="h-4 w-4" />
           {t("nav.logout")}

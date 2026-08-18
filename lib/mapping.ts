@@ -50,6 +50,11 @@ const ROLE_ALIASES: Record<ColumnRole, string[]> = {
     "الوصف",
     "اسم السلعه",
     "اسم السلعة",
+    "البيان",
+    "اسم المصروف",
+    "اسم العمليه",
+    "اسم العملية",
+    "البند",
   ],
   sku: [
     "product code",
@@ -169,11 +174,17 @@ const ROLE_ALIASES: Record<ColumnRole, string[]> = {
     "section",
     "group",
     "class",
+    "type",
+    "transaction type",
     "الفئه",
     "الفئة",
     "تصنيف",
     "القسم",
     "التصنيف",
+    "فئه العمليه",
+    "فئة العملية",
+    "نوع العمليه",
+    "نوع العملية",
   ],
   expenseType: [
     "expense type",
@@ -192,7 +203,8 @@ const ROLE_ALIASES: Record<ColumnRole, string[]> = {
     "الملاحظات",
     "ملاحظات",
     "ملاحظة",
-    "البيان",
+    "التفاصيل",
+    "تفاصيل",
   ],
 };
 
@@ -282,16 +294,18 @@ export function detectColumns(headers: string[]): MappingResult {
     });
 
   if (!mapping.date) {
-    warnings.push("No date column found / لم يُعثر على عمود تاريخ. The file will be treated as one period.");
+    warnings.push(
+      "No date column found. The file will be treated as one period. / لم يُعثر على عمود تاريخ. سيُعامل الملف كفترة واحدة.",
+    );
   }
   if (!mapping.revenue && !mapping.sellingPrice) {
     warnings.push(
-      "No sales or selling-price column found / لم يُعثر على عمود مبيعات أو سعر بيع. Use headers like Sales, Price, Revenue, المبيعات, سعر البيع.",
+      "No sales or selling-price column found. Use headers like Sales, Price, Revenue. / لم يُعثر على عمود مبيعات أو سعر بيع. استخدمي عناوين مثل المبيعات أو سعر البيع.",
     );
   }
   if (!mapping.costPrice && !mapping.expense) {
     warnings.push(
-      "No cost or expense column found / لم يُعثر على عمود تكلفة أو مصروف. Operating costs will come from settings only.",
+      "No cost or expense column found. Operating costs will come from settings only. / لم يُعثر على عمود تكلفة أو مصروف. مصاريف التشغيل ستأتي من الإعدادات فقط.",
     );
   }
 

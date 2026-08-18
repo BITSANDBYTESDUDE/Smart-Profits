@@ -7,24 +7,31 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAnalysis } from "@/context/analysis-context";
 import { useAppearance } from "@/context/appearance";
-import { answerMerchantQuestion } from "@/lib/qa";
+import { answerMerchantQuestion, resultForQuestion } from "@/lib/qa";
+import { scopeFromQuestion } from "@/lib/scope";
 
 const HINTS = {
   ar: [
     "مين أعلى منتج ربح؟",
-    "ليش ربحي هالشهر نزل؟",
+    "بدي خطة تسويقية",
+    "المنتج الأكثر مبيعاً؟",
+    "كميات البيع للمنتجات اللي عرضتها؟",
     "شو أشتري أول؟",
     "وين تسريب الربح؟",
     "شو أعمل اليوم؟",
-    "كيف يُحسب صافي الربح؟",
+    "مبيعات شهر يناير؟",
+    "حلّل منتج سماعات لاسلكية",
   ],
   en: [
     "What is the highest profit product?",
-    "Why did profit drop?",
+    "Give me a marketing plan",
+    "What is the best seller?",
+    "Sales quantities for those products?",
     "What should I buy first?",
     "Where is the profit leak?",
     "What should I do today?",
-    "How is net profit calculated?",
+    "January sales?",
+    "Analyze wireless headphones",
   ],
 } as const;
 
@@ -34,7 +41,7 @@ interface ChatTurn {
 }
 
 export function AdvisorAskBox({ chat = false }: { chat?: boolean }) {
-  const { result, currency } = useAnalysis();
+  const { result, currency, parseResult, settings, taxonomy, scope, setScope } = useAnalysis();
   const { t, locale } = useAppearance();
   const [question, setQuestion] = useState("");
   const [turns, setTurns] = useState<ChatTurn[]>([]);
@@ -48,9 +55,27 @@ export function AdvisorAskBox({ chat = false }: { chat?: boolean }) {
       setQuestion("");
       return;
     }
+    const nextScope = parseResult ? scopeFromQuestion(text, parseResult.transactions, scope) : scope;
+    if (
+      nextScope.monthKey !== scope.monthKey ||
+      nextScope.product !== scope.product ||
+      nextScope.sheet !== scope.sheet
+    ) {
+      setScope(nextScope);
+    }
+    const last = turns[turns.length - 1];
+    const scoped = resultForQuestion(text, parseResult, settings, taxonomy, result, nextScope) ?? result;
     setTurns((prev) => [
       ...prev,
-      { q: text, a: answerMerchantQuestion(text, result, { locale, currency }) },
+      {
+        q: text,
+        a: answerMerchantQuestion(text, scoped, {
+          locale,
+          currency,
+          previousQuestion: last?.q,
+          previousAnswer: last?.a,
+        }),
+      },
     ]);
     setQuestion("");
   }

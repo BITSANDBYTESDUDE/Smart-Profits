@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: smartprofit-postgres
+    environment:
+      POSTGRES_USER: smartprofit
+      POSTGRES_PASSWORD: smartprofit
+      POSTGRES_DB: smartprofit
+    ports:
+      - "5432:5432"
+    volumes:
+      - smartprofit_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smartprofit -d smartprofit"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  smartprofit_pg:

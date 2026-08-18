@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { findAccount } from "@/lib/server/accounts";
-import { sendPasswordEmail } from "@/lib/server/send-password-email";
+import { isMailConfigured, sendPasswordEmail } from "@/lib/server/send-password-email";
 
 export async function POST(request: Request) {
   try {
@@ -8,6 +8,16 @@ export async function POST(request: Request) {
     const email = String(body.email || "").trim().toLowerCase();
     if (!email || !email.includes("@")) {
       return NextResponse.json({ error: "ضع بريداً إلكترونياً صحيحاً." }, { status: 400 });
+    }
+
+    if (!isMailConfigured()) {
+      return NextResponse.json(
+        {
+          error:
+            "بريد الإرسال غير مُعد بعد. أنشئ جيميل للتطبيق وضعي MAIL_USER و MAIL_APP_PASSWORD في .env ثم أعيدي تشغيل npm run dev. يمكنك تعيين كلمة مرور جديدة من نفس الصفحة الآن.",
+        },
+        { status: 503 },
+      );
     }
 
     const account = await findAccount(email);
@@ -32,12 +42,12 @@ export async function POST(request: Request) {
     return NextResponse.json({
       ok: true,
       method: result.method,
-      message: "إذا كان البريد مسجّلاً ستصلك رسالة على الجيميل بكلمة المرور. إذا كانت أول مرة، أكّد الرسالة ثم أعد المحاولة.",
+      message: `تم إرسال كلمة المرور إلى ${email} من بريد Smart Profits.`,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "تعذر إرسال الرسالة.";
     return NextResponse.json(
-      { error: "تعذر إرسال الرسالة إلى الجيميل. تحقق من إعداد البريد أو أعد المحاولة." , detail: message },
+      { error: "تعذر إرسال الرسالة من بريد التطبيق. تأكد من MAIL_USER وكلمة مرور التطبيق.", detail: message },
       { status: 500 },
     );
   }

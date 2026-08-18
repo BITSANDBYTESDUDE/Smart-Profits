@@ -1,4 +1,4 @@
-import { ARABIC_MONTHS, monthKey, monthLabel } from "./format";
+import { monthKey, monthLabel } from "./format";
 import type {
   AiRecommendation,
   AlertSeverity,
@@ -78,7 +78,7 @@ export function predictFuturePerformance(
 
     series.push({
       key: monthKey(next.year, next.month),
-      label: `${ARABIC_MONTHS[next.month]} (توقع)`,
+      label: monthLabel(next.year, next.month),
       predictedRevenue,
       predictedExpenses,
       predictedProfit,

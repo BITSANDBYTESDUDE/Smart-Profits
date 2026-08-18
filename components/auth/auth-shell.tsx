@@ -7,13 +7,13 @@ import { useAppearance } from "@/context/appearance";
 export function AuthBrandPanel() {
   const { t } = useAppearance();
   return (
-    <div className="relative hidden min-h-screen overflow-hidden bg-card lg:flex lg:w-1/2 lg:items-center lg:justify-center">
-      <div className="bg-grid-fade absolute inset-0 opacity-40" />
-      <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-primary/10" />
-      <div className="absolute start-16 top-24 h-40 w-40 rounded-full bg-primary/25 blur-3xl" />
-      <div className="absolute end-10 bottom-20 h-52 w-52 rounded-full bg-accent/20 blur-3xl" />
+    <div className="auth-brand-panel relative hidden min-h-screen overflow-hidden bg-card lg:flex lg:w-1/2 lg:items-center lg:justify-center">
+      <div className="auth-brand-grid bg-grid-fade absolute inset-0 opacity-40" />
+      <div className="auth-brand-veil absolute inset-0 bg-gradient-to-t from-background via-transparent to-primary/10" />
+      <div className="auth-brand-glow-a absolute start-16 top-24 h-40 w-40 rounded-full bg-primary/25 blur-3xl" />
+      <div className="auth-brand-glow-b absolute end-10 bottom-20 h-52 w-52 rounded-full bg-accent/20 blur-3xl" />
 
-      <div className="relative z-10 mx-10 max-w-md rounded-3xl border border-primary/20 bg-background/70 p-8 shadow-2xl backdrop-blur-md">
+      <div className="auth-brand-card relative z-10 mx-10 max-w-md rounded-3xl border border-primary/20 bg-background/70 p-8 shadow-2xl backdrop-blur-md">
         <Logo size="lg" tagline={t("brand.tagline")} />
         <h2 className="mt-6 text-2xl font-bold leading-10 text-foreground">{t("brand.advisor")}</h2>
         <p className="mt-3 text-sm leading-7 text-muted">{t("brand.advisor.body")}</p>

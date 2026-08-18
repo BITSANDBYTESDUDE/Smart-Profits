@@ -13,6 +13,20 @@ export type ColumnRole =
 
 export type CurrencyCode = "SAR" | "USD" | "AED" | "JOD" | "ILS";
 
+export type FinancialBucket = "revenue" | "opex" | "salaries" | "cogs" | "waste";
+
+export type TaxonomySide = "revenue" | "opex";
+
+export interface TaxonomyEntry {
+  key: string;
+  term: string;
+  side: TaxonomySide;
+  bucket: FinancialBucket;
+  updatedAt: string;
+}
+
+export type TaxonomyMap = Record<string, TaxonomyEntry>;
+
 export interface ColumnMapping {
   date?: string;
   product?: string;
@@ -48,6 +62,12 @@ export interface Transaction {
   expenseType: string;
   notes: string;
   sourceSheet?: string;
+  bucket?: FinancialBucket;
+  originalAmount?: number;
+  confidence?: number;
+  needsReview?: boolean;
+  classifyTerm?: string;
+  classifyTermKey?: string;
 }
 
 export type SheetRole = "detail" | "summary" | "empty" | "skipped";
@@ -58,6 +78,9 @@ export interface SheetScan {
   rows: number;
   validRows: number;
   reason?: string;
+  revenue?: number;
+  expenses?: number;
+  netProfit?: number;
 }
 
 export interface ParseResult {
@@ -103,6 +126,8 @@ export interface MonthlyPoint {
   revenue: number;
   cogs: number;
   opex: number;
+  salaries: number;
+  waste: number;
   expenses: number;
   netProfit: number;
 }
@@ -148,10 +173,22 @@ export interface ProductHighlights {
   lossMakers: ProductPerformance[];
 }
 
+export interface BucketTotals {
+  revenue: number;
+  opex: number;
+  salaries: number;
+  cogs: number;
+  waste: number;
+  expenses: number;
+  netProfit: number;
+}
+
 export interface FinancialKPIs {
   totalRevenue: number;
   totalCogs: number;
   totalOpex: number;
+  totalSalaries: number;
+  totalWaste: number;
   totalExpenses: number;
   netProfit: number;
   profitMargin: number;
@@ -228,6 +265,8 @@ export interface ForecastResult {
 export interface AnalysisResult {
   kpis: FinancialKPIs;
   monthlySeries: MonthlyPoint[];
+  bucketTotals: BucketTotals;
+  sheetMetrics: SheetScan[];
   expenseBreakdown: ExpenseSlice[];
   topProducts: ProductStat[];
   stagnantInventory: StagnantItem[];
@@ -239,6 +278,16 @@ export interface AnalysisResult {
   fileName: string;
   rowCount: number;
   analyzedAt: string;
+  pendingClassifications: ClassificationPrompt[];
+}
+
+export interface ClassificationPrompt {
+  key: string;
+  term: string;
+  amount: number;
+  count: number;
+  confidence: number;
+  sheet?: string;
 }
 
 export type FindingTone = "good" | "warn" | "bad";

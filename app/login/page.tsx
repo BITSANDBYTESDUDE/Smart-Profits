@@ -9,11 +9,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAppearance } from "@/context/appearance";
 import { useAuth } from "@/context/auth-context";
+import { useSmartGuard } from "@/context/smart-guard-context";
+import { GuardBlockedError } from "@/lib/smart-guard/client";
 import { toast } from "sonner";
 
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
+  const { protect } = useSmartGuard();
   const { t } = useAppearance();
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -37,8 +40,17 @@ export default function LoginPage() {
       return;
     }
 
-    toast.success(t("auth.loggedIn"));
-    router.push("/dashboard");
+    try {
+      await protect("login", { email });
+      toast.success(t("auth.loggedIn"));
+      router.push("/dashboard");
+    } catch (error) {
+      if (error instanceof GuardBlockedError) {
+        return;
+      }
+      toast.success(t("auth.loggedIn"));
+      router.push("/dashboard");
+    }
   }
 
   return (

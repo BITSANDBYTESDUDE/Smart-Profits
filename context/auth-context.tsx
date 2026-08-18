@@ -4,11 +4,13 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { AccountStatus, PlanTier } from "@/lib/admin/config";
 import { trackPlatform } from "@/lib/admin/track";
 import { normalizeEmail, SESSION_KEY, SESSION_USER_KEY, USERS_KEY } from "@/lib/tenant";
+import { normalizeMobile } from "@/lib/phone";
 
 export interface AuthUser {
   fullName: string;
   storeName: string;
   email: string;
+  phone: string;
 }
 
 export interface StoredUser extends AuthUser {
@@ -24,6 +26,7 @@ interface AuthContextValue {
   ready: boolean;
   register: (user: StoredUser) => Promise<void>;
   login: (email: string, password: string) => Promise<boolean>;
+  updateProfile: (patch: Partial<Pick<AuthUser, "fullName" | "storeName" | "phone">>) => Promise<boolean>;
   findAccount: (email: string) => StoredUser | null;
   logout: () => void;
 }
@@ -52,7 +55,12 @@ function writeUsers(users: StoredUser[]) {
 }
 
 function withoutPassword(user: StoredUser): AuthUser {
-  return { fullName: user.fullName, storeName: user.storeName, email: normalizeEmail(user.email) };
+  return {
+    fullName: user.fullName,
+    storeName: user.storeName,
+    email: normalizeEmail(user.email),
+    phone: user.phone || "",
+  };
 }
 
 function touchUser(users: StoredUser[], email: string, extra?: Partial<StoredUser>) {
@@ -100,16 +108,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = useCallback(async (next: StoredUser) => {
     const email = normalizeEmail(next.email);
+    const phone = normalizeMobile(next.phone || "") || "";
     const now = new Date().toISOString();
     const account: StoredUser = {
       ...next,
       email,
+      phone,
       createdAt: next.createdAt || now,
       lastActive: now,
       plan: next.plan ?? "free",
       status: "active",
     };
     const users = readUsers().filter((item) => item.email.toLowerCase() !== email);
+    if (phone && users.some((item) => item.phone === phone)) {
+      throw new Error("phone-taken");
+    }
     users.push(account);
     writeUsers(users);
     localStorage.setItem(SESSION_USER_KEY, JSON.stringify(withoutPassword(account)));
@@ -143,13 +156,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
         if (!response.ok) return false;
         const data = (await response.json()) as {
-          account?: { fullName: string; storeName: string; email: string; createdAt?: string; lastActive?: string; plan?: PlanTier; status?: AccountStatus };
+          account?: {
+            fullName: string;
+            storeName: string;
+            email: string;
+            phone?: string;
+            createdAt?: string;
+            lastActive?: string;
+            plan?: PlanTier;
+            status?: AccountStatus;
+          };
         };
         if (!data.account) return false;
         account = {
           fullName: data.account.fullName,
           storeName: data.account.storeName,
           email: data.account.email,
+          phone: data.account.phone || "",
           password,
           createdAt: data.account.createdAt,
           lastActive: data.account.lastActive,
@@ -177,14 +200,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return true;
   }, []);
 
+  const updateProfile = useCallback(async (patch: Partial<Pick<AuthUser, "fullName" | "storeName" | "phone">>) => {
+    if (!user) return false;
+    const email = normalizeEmail(user.email);
+    const users = readUsers();
+    const current = users.find((item) => item.email.toLowerCase() === email);
+    if (!current) return false;
+
+    let phone = current.phone || "";
+    if (patch.phone !== undefined) {
+      const normalized = normalizeMobile(patch.phone);
+      if (!normalized) return false;
+      const taken = users.some((item) => item.email.toLowerCase() !== email && item.phone === normalized);
+      if (taken) return false;
+      phone = normalized;
+    }
+
+    const account: StoredUser = {
+      ...current,
+      fullName: patch.fullName !== undefined ? patch.fullName.trim() : current.fullName,
+      storeName: patch.storeName !== undefined ? patch.storeName.trim() : current.storeName,
+      phone,
+      lastActive: new Date().toISOString(),
+    };
+    writeUsers(users.map((item) => (item.email.toLowerCase() === email ? account : item)));
+    localStorage.setItem(SESSION_USER_KEY, JSON.stringify(withoutPassword(account)));
+    setUser(withoutPassword(account));
+
+    await fetch("/api/auth/profile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        fullName: account.fullName,
+        storeName: account.storeName,
+        phone: account.phone,
+      }),
+    }).catch(() => undefined);
+
+    return true;
+  }, [user]);
+
   const logout = useCallback(() => {
     localStorage.removeItem(SESSION_KEY);
     setUser(null);
   }, []);
 
   const value = useMemo(
-    () => ({ user, ready, register, login, findAccount, logout }),
-    [user, ready, register, login, findAccount, logout],
+    () => ({ user, ready, register, login, updateProfile, findAccount, logout }),
+    [user, ready, register, login, updateProfile, findAccount, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

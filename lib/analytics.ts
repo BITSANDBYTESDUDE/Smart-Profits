@@ -1,8 +1,11 @@
 import { buildAdvisorReport } from "./advisor";
+import { bucketTotals, buildClassificationPrompts, classifyAll, isExcludedFromProductRankings } from "./classify";
 import { isUnspecifiedProduct } from "./mapping";
 import { monthKey, monthLabel } from "./format";
+import { isPlausibleBusinessDate } from "./dates";
 import { predictFuturePerformance } from "./forecast";
 import { monthlyOpexFromSettings } from "./opex";
+import { dateFromSheetName } from "./sheets";
 import { clamp, round2, safeDivide } from "./utils";
 import type {
   AnalysisResult,
@@ -16,6 +19,7 @@ import type {
   Transaction,
   ProductHighlights,
   ProductPerformance,
+  TaxonomyMap,
 } from "./types";
 
 const SLICE_COLORS = ["#4FD1C5", "#E8C56B", "#64748B", "#67E8F9", "#F59E0B", "#EF4444"];
@@ -28,6 +32,15 @@ function monthOf(date: Date) {
   return { year: date.getFullYear(), month: date.getMonth() };
 }
 
+function transactionMonthDate(tx: Transaction): Date {
+  if (isPlausibleBusinessDate(tx.date)) return tx.date;
+  if (tx.sourceSheet) {
+    const fromSheet = dateFromSheetName(tx.sourceSheet);
+    if (fromSheet) return fromSheet;
+  }
+  return new Date();
+}
+
 export { monthlyOpexFromSettings };
 
 export function buildMonthlySeries(
@@ -35,13 +48,13 @@ export function buildMonthlySeries(
   settings: AppSettings,
 ): MonthlyPoint[] {
   const buckets = new Map<string, MonthlyPoint>();
-  const dated = transactions.filter((t) => t.date);
+  const dated = transactions.filter((t) => isPlausibleBusinessDate(t.date));
 
   const source = dated.length ? dated : transactions;
-  const fallback = new Date();
 
   for (const tx of source) {
-    const date = tx.date ?? fallback;
+    if (tx.needsReview) continue;
+    const date = isPlausibleBusinessDate(tx.date) ? tx.date : transactionMonthDate(tx);
     const { year, month } = monthOf(date);
     const key = monthKey(year, month);
     const current = buckets.get(key) ?? {
@@ -52,13 +65,26 @@ export function buildMonthlySeries(
       revenue: 0,
       cogs: 0,
       opex: 0,
+      salaries: 0,
+      waste: 0,
       expenses: 0,
       netProfit: 0,
     };
 
-    current.revenue += tx.revenue;
-    current.cogs += tx.costPrice * (tx.quantity || 1);
-    current.opex += tx.expense;
+    const qty = tx.quantity || 1;
+    const bucket = tx.bucket ?? "revenue";
+    if (bucket === "revenue") {
+      current.revenue += tx.revenue;
+      current.cogs += tx.costPrice * qty;
+    } else if (bucket === "cogs") {
+      current.cogs += tx.costPrice * qty || tx.expense;
+    } else if (bucket === "salaries") {
+      current.salaries += tx.expense;
+    } else if (bucket === "waste") {
+      current.waste += tx.expense;
+    } else {
+      current.opex += tx.expense;
+    }
     buckets.set(key, current);
   }
 
@@ -67,7 +93,7 @@ export function buildMonthlySeries(
 
   for (const point of points) {
     point.opex += monthlyFixed;
-    point.expenses = point.cogs + point.opex;
+    point.expenses = point.cogs + point.opex + point.salaries + point.waste;
     point.netProfit = point.revenue - point.expenses;
   }
 
@@ -111,11 +137,13 @@ export function computeKpis(
   predictedProfit: number,
 ): FinancialKPIs {
   const { current, previous } = latestTwo(monthly);
-  const totalRevenue = current?.revenue ?? 0;
-  const totalCogs = current?.cogs ?? 0;
-  const totalOpex = current?.opex ?? 0;
-  const totalExpenses = current?.expenses ?? 0;
-  const netProfit = current?.netProfit ?? 0;
+  const totalRevenue = monthly.reduce((sum, point) => sum + point.revenue, 0);
+  const totalCogs = monthly.reduce((sum, point) => sum + point.cogs, 0);
+  const totalOpex = monthly.reduce((sum, point) => sum + point.opex, 0);
+  const totalSalaries = monthly.reduce((sum, point) => sum + point.salaries, 0);
+  const totalWaste = monthly.reduce((sum, point) => sum + point.waste, 0);
+  const totalExpenses = monthly.reduce((sum, point) => sum + point.expenses, 0);
+  const netProfit = monthly.reduce((sum, point) => sum + point.netProfit, 0);
   const profitMargin = safeDivide(netProfit, totalRevenue) * 100;
   const revenueChangePct = changePct(totalRevenue, previous?.revenue);
   const expenseChangePct = changePct(totalExpenses, previous?.expenses);
@@ -132,6 +160,8 @@ export function computeKpis(
     totalRevenue: round2(totalRevenue),
     totalCogs: round2(totalCogs),
     totalOpex: round2(totalOpex),
+    totalSalaries: round2(totalSalaries),
+    totalWaste: round2(totalWaste),
     totalExpenses: round2(totalExpenses),
     netProfit: round2(netProfit),
     profitMargin: round2(profitMargin),
@@ -144,20 +174,31 @@ export function computeKpis(
 }
 
 export function expenseBreakdown(
-  current: MonthlyPoint | null | undefined,
+  monthly: MonthlyPoint[],
   settings: AppSettings,
 ): ExpenseSlice[] {
-  if (!current) return [];
+  if (!monthly.length) return [];
+  const months = monthly.length;
   const fixed = monthlyOpexFromSettings(settings);
-  const fileVariable = Math.max(0, current.opex - fixed);
+  const cogs = monthly.reduce((sum, point) => sum + point.cogs, 0);
+  const salaries = monthly.reduce((sum, point) => sum + point.salaries, 0);
+  const waste = monthly.reduce((sum, point) => sum + point.waste, 0);
+  const fileOpex = monthly.reduce((sum, point) => sum + Math.max(0, point.opex - fixed), 0);
   const slices: ExpenseSlice[] = [
-    { name: "المخزون / التكلفة", value: current.cogs, color: SLICE_COLORS[0] },
-    { name: "الإيجار", value: settings.opexIncludedInFile ? 0 : settings.rent, color: SLICE_COLORS[1] },
-    { name: "الرواتب", value: settings.opexIncludedInFile ? 0 : settings.salaries, color: SLICE_COLORS[2] },
-    { name: "فواتير وخدمات", value: settings.opexIncludedInFile ? 0 : settings.utilities || 0, color: SLICE_COLORS[4] },
-    { name: "تسويق واشتراكات", value: settings.opexIncludedInFile ? 0 : settings.otherOpex, color: SLICE_COLORS[3] },
-    { name: "تشغيل من الملف", value: fileVariable, color: SLICE_COLORS[5] },
+    { name: "تكلفة المبيعات / خامات", value: cogs, color: SLICE_COLORS[0] },
+    { name: "الإيجار", value: settings.opexIncludedInFile ? 0 : settings.rent * months, color: SLICE_COLORS[1] },
+    { name: "الرواتب", value: (settings.opexIncludedInFile ? 0 : settings.salaries * months) + salaries, color: SLICE_COLORS[2] },
+    { name: "فواتير وخدمات", value: settings.opexIncludedInFile ? 0 : (settings.utilities || 0) * months, color: SLICE_COLORS[4] },
+    { name: "تسويق وتشغيل", value: (settings.opexIncludedInFile ? 0 : settings.otherOpex * months) + fileOpex, color: SLICE_COLORS[3] },
+    { name: "تالف وهالك", value: waste, color: SLICE_COLORS[5] },
   ].filter((s) => s.value > 0);
+
+  if (!slices.length) {
+    const leftover = monthly.reduce((sum, point) => sum + point.expenses, 0);
+    if (leftover > 0) {
+      slices.push({ name: "مصروفات غير مصنّفة", value: leftover, color: SLICE_COLORS[0] });
+    }
+  }
 
   return slices.map((slice, index) => ({ ...slice, color: SLICE_COLORS[index % SLICE_COLORS.length] }));
 }
@@ -181,7 +222,7 @@ export function computeProductStats(transactions: Transaction[]): ProductStat[] 
   const split = maxTime - 30 * 86400000;
 
   for (const tx of transactions) {
-    if (!tx.product || tx.revenue <= 0) continue;
+    if (isExcludedFromProductRankings(tx) || !tx.product || isUnspecifiedProduct(tx.product)) continue;
     const current = map.get(tx.product) ?? {
       revenue: 0,
       quantity: 0,
@@ -215,7 +256,7 @@ export function computeStagnantInventory(transactions: Transaction[]): StagnantI
   let maxDate: Date | null = null;
 
   for (const tx of transactions) {
-    if (!tx.product || tx.revenue <= 0) continue;
+    if (isExcludedFromProductRankings(tx) || !tx.product || isUnspecifiedProduct(tx.product)) continue;
     const current = map.get(tx.product) ?? { lastSale: null as Date | null, revenue: 0 };
     current.revenue += tx.revenue;
     if (tx.date && (!current.lastSale || tx.date > current.lastSale)) current.lastSale = tx.date;
@@ -251,8 +292,7 @@ export function computeProductHighlights(transactions: Transaction[]): ProductHi
   >();
 
   for (const tx of transactions) {
-    if (!tx.product || tx.revenue <= 0 || isUnspecifiedProduct(tx.product)) continue;
-    if (/شحن|تسويق|shipping|delivery/i.test(`${tx.product} ${tx.category}`)) continue;
+    if (isExcludedFromProductRankings(tx) || !tx.product || isUnspecifiedProduct(tx.product)) continue;
     const current = map.get(tx.product) ?? { saleCount: 0, quantity: 0, revenue: 0, cogs: 0 };
     current.saleCount += 1;
     current.quantity += tx.quantity || 0;
@@ -292,21 +332,23 @@ export function computeProductHighlights(transactions: Transaction[]): ProductHi
   return { catalog, highestSales, lowestSales, mostProfitable, lossMakers };
 }
 
-export function runFullAnalysis(parsed: ParseResult, settings: AppSettings): AnalysisResult {
-  const monthlySeries = buildMonthlySeries(parsed.transactions, settings);
+export function runFullAnalysis(parsed: ParseResult, settings: AppSettings, taxonomy?: TaxonomyMap): AnalysisResult {
+  const transactions = classifyAll(parsed.transactions, taxonomy);
+  const monthlySeries = buildMonthlySeries(transactions, settings);
   const forecast = predictFuturePerformance(monthlySeries);
   const kpis = computeKpis(monthlySeries, forecast.nextMonthProfit);
-  const { current } = latestTwo(monthlySeries);
+  const totals = bucketTotals(transactions);
+  const sheetMetrics = buildSheetMetrics(transactions, parsed.sheets);
 
-  const productHighlights = computeProductHighlights(parsed.transactions);
-  const stagnantInventory = computeStagnantInventory(parsed.transactions);
-  const extraInsight = buildShippingInsight(parsed.transactions);
+  const productHighlights = computeProductHighlights(transactions);
+  const stagnantInventory = computeStagnantInventory(transactions);
+  const extraInsight = buildShippingInsight(transactions);
   if (extraInsight) {
     forecast.alerts = [extraInsight, ...forecast.alerts.filter((a) => a.id !== extraInsight.id)];
   }
 
   const advisor = buildAdvisorReport({
-    transactions: parsed.transactions,
+    transactions,
     kpis,
     monthly: monthlySeries,
     forecast,
@@ -316,20 +358,47 @@ export function runFullAnalysis(parsed: ParseResult, settings: AppSettings): Ana
     reviewNeeded: parsed.cleaning?.reviewNeeded ?? 0,
   });
 
+  const classifiedCount = transactions.filter((tx) => tx.bucket && tx.bucket !== "revenue").length;
+  const extraWarnings: string[] = [];
+  if (classifiedCount > 0) {
+    extraWarnings.push(
+      `Classified ${classifiedCount} non-sales rows so they are not counted as revenue. / صُنّفت ${classifiedCount} بنود غير بيعية حتى لا تدخل ضمن المبيعات.`,
+    );
+  }
+  const hasExpenseRows = transactions.some((tx) => tx.bucket && tx.bucket !== "revenue");
+  const hasCostColumn = Boolean(parsed.mapping.mapping.costPrice);
+  if (hasExpenseRows && !hasCostColumn) {
+    extraWarnings.push(
+      "Cost columns are missing, but expense rows were found. Net profit is revenue minus those rows. / لا يوجد عمود تكلفة، لكن وُجدت بنود مصروف. صافي الربح = المبيعات − هذه البنود.",
+    );
+  }
+  const pendingClassifications = buildClassificationPrompts(transactions);
+  if (pendingClassifications.length) {
+    extraWarnings.push(
+      `${pendingClassifications.length} ambiguous items need your classification. They are held out until you answer. / ${pendingClassifications.length} بنود غامضة بانتظار تصنيفك ولن تدخل المبيعات أو المصروف حتى تجيبي.`,
+    );
+  }
+
   return {
     kpis,
     monthlySeries,
-    expenseBreakdown: expenseBreakdown(current ?? undefined, settings),
-    topProducts: computeProductStats(parsed.transactions),
+    bucketTotals: {
+      ...totals,
+      expenses: kpis.totalExpenses,
+      netProfit: kpis.netProfit,
+    },
+    sheetMetrics,
+    expenseBreakdown: expenseBreakdown(monthlySeries, settings),
+    topProducts: computeProductStats(transactions),
     stagnantInventory,
     productHighlights,
     forecast,
     advisor,
     mapping: parsed.mapping,
-    warnings: [...parsed.warnings, ...parsed.mapping.warnings.filter((w, i, arr) => arr.indexOf(w) === i)].filter(
+    warnings: [...extraWarnings, ...parsed.warnings, ...parsed.mapping.warnings.filter((w, i, arr) => arr.indexOf(w) === i)].filter(
       (warning, index, arr) => {
         if (arr.indexOf(warning) !== index) return false;
-        const hasDates = parsed.transactions.some((tx) => tx.date);
+        const hasDates = transactions.some((tx) => tx.date);
         if (hasDates && warning.includes("عمود تاريخ")) return false;
         return true;
       },
@@ -337,7 +406,49 @@ export function runFullAnalysis(parsed: ParseResult, settings: AppSettings): Ana
     fileName: parsed.fileName,
     rowCount: parsed.rowCount,
     analyzedAt: new Date().toISOString(),
+    pendingClassifications,
   };
+}
+
+function buildSheetMetrics(transactions: Transaction[], scans?: ParseResult["sheets"]) {
+  const bySheet = new Map<string, { revenue: number; expenses: number }>();
+  for (const tx of transactions) {
+    if (tx.needsReview) continue;
+    const name = tx.sourceSheet || "ملف واحد";
+    const current = bySheet.get(name) ?? { revenue: 0, expenses: 0 };
+    if ((tx.bucket ?? "revenue") === "revenue") {
+      current.revenue += tx.revenue;
+      current.expenses += tx.costPrice * (tx.quantity || 1);
+    } else if (tx.bucket === "cogs") {
+      current.expenses += tx.costPrice * (tx.quantity || 1) || tx.expense;
+    } else {
+      current.expenses += tx.expense;
+    }
+    bySheet.set(name, current);
+  }
+
+  if (scans?.length) {
+    return scans.map((scan) => {
+      const totals = bySheet.get(scan.name);
+      if (!totals) return scan;
+      return {
+        ...scan,
+        revenue: round2(totals.revenue),
+        expenses: round2(totals.expenses),
+        netProfit: round2(totals.revenue - totals.expenses),
+      };
+    });
+  }
+
+  return Array.from(bySheet.entries()).map(([name, totals]) => ({
+    name,
+    role: "detail" as const,
+    rows: transactions.filter((tx) => (tx.sourceSheet || "ملف واحد") === name).length,
+    validRows: transactions.filter((tx) => (tx.sourceSheet || "ملف واحد") === name).length,
+    revenue: round2(totals.revenue),
+    expenses: round2(totals.expenses),
+    netProfit: round2(totals.revenue - totals.expenses),
+  }));
 }
 
 function buildShippingInsight(transactions: Transaction[]) {

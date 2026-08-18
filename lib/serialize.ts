@@ -1,4 +1,4 @@
-import type { ActionLogEntry, AppSettings, ParseResult, Transaction } from "./types";
+import type { ActionLogEntry, AppSettings, ParseResult, TaxonomyMap, Transaction } from "./types";
 
 interface SerializedParseResult extends Omit<ParseResult, "transactions"> {
   transactions: Array<Omit<Transaction, "date"> & { date: string | null }>;
@@ -18,6 +18,7 @@ export interface PersistedWorkspace {
   activeFileId: string;
   files: PersistedFile[];
   actionLog: ActionLogEntry[];
+  taxonomy?: TaxonomyMap;
   ownerEmail?: string;
   savedAt?: string;
 }

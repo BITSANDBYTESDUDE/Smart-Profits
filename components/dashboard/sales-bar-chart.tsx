@@ -1,50 +1,62 @@
 "use client";
 
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useChartTheme } from "@/components/charts/use-chart-theme";
 import { useAnalysis } from "@/context/analysis-context";
-import { convertAmount, formatMoney } from "@/lib/format";
+import { useAppearance } from "@/context/appearance";
+import { convertAmount, currencySuffix } from "@/lib/format";
 
 export function SalesBarChart() {
   const { result, currency } = useAnalysis();
+  const { t, months } = useAppearance();
+  const palette = useChartTheme();
   if (!result) return null;
 
   const history = result.monthlySeries.map((point) => ({
-    name: point.label.replace(/ \d{4}$/, ""),
+    name: months[point.month] ?? point.label.replace(/ \d{4}$/, ""),
     sales: Math.round(convertAmount(point.revenue, currency)),
     expenses: Math.round(convertAmount(point.expenses, currency)),
-    ai: false,
   }));
 
   const next = result.forecast.series.find((p) => p.isForecast);
   if (next) {
+    const [, month] = next.key.split("-").map(Number);
     history.push({
-      name: next.label.replace(" (توقع)", ""),
+      name: `${months[(month || 1) - 1] ?? next.label} (${t("chart.forecast")})`,
       sales: Math.round(convertAmount(next.predictedRevenue ?? 0, currency)),
       expenses: Math.round(convertAmount(next.predictedExpenses ?? 0, currency)),
-      ai: true,
     });
   }
+
+  const suffix = currencySuffix(currency);
 
   return (
     <Card className="h-full">
       <CardHeader>
-        <CardTitle>المبيعات والمصروفات</CardTitle>
-        <Badge tone="info">ذكاء اصطناعي</Badge>
+        <CardTitle>{t("chart.revVsExp")}</CardTitle>
+        <Badge tone="info">{t("chart.forecast")}</Badge>
       </CardHeader>
       <CardContent className="h-[280px]" dir="ltr">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={history}>
-            <CartesianGrid stroke="#1e293b" vertical={false} />
-            <XAxis dataKey="name" tick={{ fill: "#94a3b8", fontSize: 11 }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} axisLine={false} tickLine={false} />
+            <CartesianGrid stroke={palette.grid} vertical={false} />
+            <XAxis dataKey="name" tick={{ fill: palette.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fill: palette.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
             <Tooltip
-              contentStyle={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 12 }}
-              formatter={(value) => formatMoney(currency === "USD" ? Number(value) * 3.75 : Number(value), currency)}
+              contentStyle={palette.tooltipStyle}
+              formatter={(value, name) => [
+                `${Number(value).toLocaleString("en-US")} ${suffix}`,
+                name === "sales" ? t("chart.rev") : t("chart.exp"),
+              ]}
             />
-            <Bar dataKey="sales" fill="#4fd1c5" radius={[6, 6, 0, 0]} />
-            <Bar dataKey="expenses" fill="#475569" radius={[6, 6, 0, 0]} />
+            <Legend
+              formatter={(value) => (value === "sales" ? t("chart.rev") : t("chart.exp"))}
+              wrapperStyle={{ color: palette.tick, fontSize: 12 }}
+            />
+            <Bar dataKey="sales" fill={palette.revenue} radius={[6, 6, 0, 0]} />
+            <Bar dataKey="expenses" fill={palette.expenses} radius={[6, 6, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>

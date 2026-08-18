@@ -11,24 +11,29 @@ function Highlight({
   product,
   tone,
   detail,
+  onPick,
 }: {
   title: string;
   product: ProductPerformance | null;
   tone: "success" | "danger" | "info" | "warning";
   detail: string;
+  onPick?: (name: string) => void;
 }) {
   return (
-    <Card className="p-4">
+    <Card
+      className={`p-4 ${product && onPick ? "cursor-pointer hover:border-primary/40" : ""}`}
+      onClick={() => product && onPick?.(product.name)}
+    >
       <p className="text-xs text-muted">{title}</p>
       <p className="mt-2 text-base font-semibold text-foreground">{product?.name ?? "لا يوجد"}</p>
-      {detail ? <p className="mt-1 text-sm text-slate-300">{detail}</p> : null}
+      {detail ? <p className="mt-1 text-sm text-muted">{detail}</p> : null}
       {product ? <Badge className="mt-2" tone={tone}>{product.isLoss ? "خسارة" : "ربح"}</Badge> : null}
     </Card>
   );
 }
 
 export function ProductSalesTable() {
-  const { result, currency } = useAnalysis();
+  const { result, currency, setScope, scope } = useAnalysis();
   if (!result?.productHighlights) return null;
   const { catalog, highestSales, lowestSales, mostProfitable, lossMakers } = result.productHighlights;
   const worstLoss = lossMakers[0] ?? null;
@@ -41,18 +46,21 @@ export function ProductSalesTable() {
           product={highestSales}
           tone="success"
           detail={highestSales ? `${highestSales.saleCount} مرة • ${highestSales.quantity} قطعة` : ""}
+          onPick={(name) => setScope({ product: name })}
         />
         <Highlight
           title="أقل منتج مبيعاً"
           product={lowestSales}
           tone="warning"
           detail={lowestSales ? `${lowestSales.saleCount} مرة • ${lowestSales.quantity} قطعة` : ""}
+          onPick={(name) => setScope({ product: name })}
         />
         <Highlight
           title="المنتج الأكثر ربحاً"
           product={mostProfitable}
           tone="success"
           detail={mostProfitable ? formatMoney(mostProfitable.profit, currency) : ""}
+          onPick={(name) => setScope({ product: name })}
         />
         <Highlight
           title="بيع قليل ويسبب خسارة"
@@ -63,12 +71,13 @@ export function ProductSalesTable() {
               ? `${worstLoss.saleCount} مرة • ${formatMoney(worstLoss.profit, currency)}`
               : "لا يوجد منتج خاسر حالياً"
           }
+          onPick={(name) => setScope({ product: name })}
         />
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>جدول القطع والمنتجات — كم مرة انباعت؟</CardTitle>
+          <CardTitle>جدول القطع والمنتجات — اضغطي منتجاً لتحليله لوحده</CardTitle>
         </CardHeader>
         <CardContent className="overflow-x-auto">
           {catalog.length === 0 ? (
@@ -89,7 +98,13 @@ export function ProductSalesTable() {
               </thead>
               <tbody>
                 {catalog.map((item) => (
-                  <tr key={item.name} className="border-b border-border/60 text-slate-200">
+                  <tr
+                    key={item.name}
+                    className={`cursor-pointer border-b border-border/60 text-slate-200 hover:bg-white/5 ${
+                      scope.product === item.name ? "bg-accent/10" : ""
+                    }`}
+                    onClick={() => setScope({ product: scope.product === item.name ? null : item.name })}
+                  >
                     <td className="px-2 py-2 font-medium text-foreground">{item.name}</td>
                     <td className="px-2 py-2">{item.saleCount} مرة</td>
                     <td className="px-2 py-2">{item.quantity} قطعة</td>

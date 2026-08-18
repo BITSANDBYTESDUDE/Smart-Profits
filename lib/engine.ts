@@ -1,7 +1,7 @@
 import { runFullAnalysis } from "./analytics";
 import { parseFinancialFile } from "./parser";
 import { generateDemoTransactions } from "./sample-data";
-import type { AppSettings, ParseResult } from "./types";
+import type { AppSettings, ParseResult, TaxonomyMap } from "./types";
 
 export function demoParseResult(): ParseResult {
   const transactions = generateDemoTransactions();
@@ -47,7 +47,7 @@ export function demoParseResult(): ParseResult {
     fileName: "بيانات تجريبية.csv",
     rowCount: transactions.length,
     skippedRows: 0,
-    warnings: ["هذه بيانات تجريبية للعرض. ارفع ملف Excel أو CSV أو PDF لرؤية أرقام متجرك."],
+    warnings: ["This is demo data. Upload an Excel, CSV, or PDF file to see your store numbers. / هذه بيانات تجريبية للعرض. ارفع ملف Excel أو CSV أو PDF لرؤية أرقام متجرك."],
     sheetName: "بيانات تجريبية",
     sheets: [
       {
@@ -70,11 +70,11 @@ export function demoParseResult(): ParseResult {
   };
 }
 
-export function analyzeParsed(parsed: ParseResult, settings: AppSettings) {
-  return runFullAnalysis(parsed, settings);
+export function analyzeParsed(parsed: ParseResult, settings: AppSettings, taxonomy?: TaxonomyMap) {
+  return runFullAnalysis(parsed, settings, taxonomy);
 }
 
-export async function analyzeUploadedFile(file: File, settings: AppSettings) {
+export async function analyzeUploadedFile(file: File, settings: AppSettings, taxonomy?: TaxonomyMap) {
   const parsed = await parseFinancialFile(file);
-  return { parsed, result: runFullAnalysis(parsed, settings) };
+  return { parsed, result: runFullAnalysis(parsed, settings, taxonomy) };
 }

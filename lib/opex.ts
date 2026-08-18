@@ -1,4 +1,5 @@
 import { round2, safeDivide } from "./utils";
+import { isSalesTransaction } from "./classify";
 import type { AppSettings, MonthlyPoint, Transaction } from "./types";
 
 export function normalizeOpexSettings(settings: AppSettings): AppSettings {
@@ -90,6 +91,7 @@ export function computeBreakEven(
   let unitsSold = 0;
 
   for (const tx of transactions) {
+    if (!isSalesTransaction(tx)) continue;
     const qty = tx.quantity > 0 ? tx.quantity : tx.revenue > 0 ? 1 : 0;
     if (qty <= 0) continue;
     const unitPrice = tx.sellingPrice > 0 ? tx.sellingPrice : tx.revenue / qty;

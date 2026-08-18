@@ -1,6 +1,6 @@
 "use client";
 
-import { Lock, Mail, Store, User } from "lucide-react";
+import { Lock, Mail, Phone, Store, User } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/auth-context";
 import { useAppearance } from "@/context/appearance";
+import { normalizeMobile } from "@/lib/phone";
 import { toast } from "sonner";
 
 export default function RegisterPage() {
@@ -24,10 +25,11 @@ export default function RegisterPage() {
     const fullName = String(data.get("fullName") || "").trim();
     const storeName = String(data.get("storeName") || "").trim();
     const email = String(data.get("email") || "").trim();
+    const phone = normalizeMobile(String(data.get("phone") || ""));
     const password = String(data.get("password") || "");
 
-    if (!fullName || !storeName || !email || password.length < 6) {
-      toast.error(t("auth.needFields"));
+    if (!fullName || !storeName || !email || !phone || password.length < 6) {
+      toast.error(phone ? t("auth.needFields") : t("auth.phone.invalid"));
       return;
     }
     if (!accepted) {
@@ -35,9 +37,14 @@ export default function RegisterPage() {
       return;
     }
 
-    register({ fullName, storeName, email, password }).catch(() => undefined);
-    toast.success(t("auth.registered"));
-    router.push("/dashboard");
+    register({ fullName, storeName, email, phone, password })
+      .then(() => {
+        toast.success(t("auth.registered"));
+        router.push("/dashboard");
+      })
+      .catch((error: unknown) => {
+        toast.error(error instanceof Error && error.message === "phone-taken" ? t("auth.phone.taken") : t("auth.needFields"));
+      });
   }
 
   return (
@@ -66,6 +73,23 @@ export default function RegisterPage() {
             <Mail className="pointer-events-none absolute end-3 top-3.5 h-4 w-4 text-slate-500" />
             <Input id="email" name="email" type="email" placeholder="example@gmail.com" className="pe-10" />
           </div>
+        </div>
+        <div>
+          <Label htmlFor="phone">{t("auth.phone")}</Label>
+          <div className="relative">
+            <Phone className="pointer-events-none absolute end-3 top-3.5 h-4 w-4 text-slate-500" />
+            <Input
+              id="phone"
+              name="phone"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              dir="ltr"
+              placeholder={t("auth.placeholder.phone")}
+              className="pe-10 text-start"
+            />
+          </div>
+          <p className="mt-1.5 text-xs leading-5 text-muted">{t("auth.phone.hint")}</p>
         </div>
         <div>
           <Label htmlFor="password">{t("auth.password")}</Label>
