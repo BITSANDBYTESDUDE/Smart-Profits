@@ -43,21 +43,19 @@ export function AuthShell({ children, compact = false }: { children: React.React
   return (
     <div className="flex h-dvh overflow-hidden bg-background">
       <section
-        className={`flex w-full flex-col lg:w-1/2 ${
-          compact
-            ? "justify-start overflow-y-auto px-4 py-3 min-[900px]:justify-center min-[900px]:overflow-hidden lg:px-10"
-            : "justify-center overflow-y-auto px-6 py-8 lg:px-16"
+        className={`flex h-dvh w-full flex-col justify-center lg:w-1/2 ${
+          compact ? "overflow-hidden px-6 py-5 lg:px-12" : "overflow-y-auto px-6 py-8 lg:px-16"
         }`}
       >
-        <div className="mx-auto w-full max-w-md">
-          <div className={`flex flex-col ${compact ? "mb-2 gap-2" : "mb-6 gap-4"}`}>
-            <Logo size={compact ? "sm" : "lg"} tagline={t("brand.tagline")} />
+        <div className={`mx-auto w-full ${compact ? "max-w-lg" : "max-w-md"}`}>
+          <div className={`flex flex-col ${compact ? "mb-5 gap-3" : "mb-6 gap-4"}`}>
+            <Logo size={compact ? "md" : "lg"} tagline={t("brand.tagline")} />
             <AppearanceToggles />
           </div>
           {children}
         </div>
       </section>
-      <AuthBrandPanel compact={compact} />
+      <AuthBrandPanel />
     </div>
   );
 }
